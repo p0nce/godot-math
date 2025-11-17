@@ -132,8 +132,6 @@ nothrow @nogc @safe:
     Vector2 opOpAssign(string op)(const Vector2 v) if (op == "/") { x /= v.x; y /= v.y; return this; }
     Vector2 opOpAssign(string op)(float scale) if (op == "/") { x /= scale; y /= scale; return this; }
     Vector2 opOpAssign(string op)(int scale) if (op == "/") { x /= scale; y /= scale; return this; }
-
-
     float opIndex(size_t n) const { assert(n < 2); return n ? y : x; }
     Vector2 opUnary(string op)() const if (op == "+") => this;    
     Vector2 opUnary(string op)() const if (op == "-") => Vector2(-x, -y);
