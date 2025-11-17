@@ -1,7 +1,7 @@
 module godotmath;
 
-import core.stdc.math: sinf, cosf, sqrtf, atan2f, ceilf, floorf, fabsf, fmodf,
-                       sin, cos, sqrt, atan2,  ceil,  floor, fabs, fmod,
+import core.stdc.math: sinf, cosf, sqrtf, atan2f, roundf, ceilf, floorf, fabsf, fmodf,
+                       sin,  cos,  sqrt,  atan2,  round,  ceil,  floor,  fabs,  fmod,
                        isfinite, isinf;
 
 nothrow @nogc @safe:
@@ -32,7 +32,7 @@ nothrow @nogc @safe:
     this(float x, float y) { this.x = x; this.y = y; }
     Vector2 abs() => Vector2(x < 0 ? -x : x, y < 0 ? -y : y); 
     float angle() const => atan2f(y, x);
-    float angle_to(const Vector2 to) const => atan2f(cross(to), dot(to));
+    float angle_to(in Vector2 to) const => atan2f(cross(to), dot(to));
     float angle_to_point(const Vector2 to) const => (to - this).angle();
     float aspect() const => width / height;
     Vector2 bezier_derivative(const Vector2 c1, const Vector2 c2, const Vector2 end, float p_t) const 
@@ -107,13 +107,24 @@ nothrow @nogc @safe:
         return v;
     }
     Vector2 orthogonal() const => Vector2(y, -x);
-    
-
+    Vector2 posmod(float mod) const => Vector2(.fposmod(x, mod), .fposmod(y, mod));
+    Vector2 posmodv(const Vector2 modv) const => Vector2(.fposmod(x, modv.x), .fposmod(y, modv.y));
+    Vector2 project(const Vector2 to) const => to * (dot(to) / to.length_squared());
     Vector2 reflect(const Vector2 normal) const
     {
         assert(normal.is_normalized());
         return normal * 2 * dot(normal) - this;
     }
+    Vector2 rotated(float by_radians) const 
+    {
+        float sine = sinf(by_radians);
+        float cosi = cosf(by_radians);
+        return Vector2(x * cosi - y * sine,
+                       x * sine + y * cosi);
+    }
+    Vector2 round() const => Vector2(.roundf(x), .roundf(y));
+    Vector2 sign() const => Vector2(.signf(x), .signf(y));
+    
 
     // operators
     Vector2 opBinary(string op)(const Vector2 v) const if (op == "*") => Vector2(x * v.x, y * v.y);
@@ -279,16 +290,6 @@ float fposmod(float x, float y)
     return value;
 }
 
-double lerp(double from, double to, double weight) 
-{
-    return from + (to - from) * weight;
-}
-
-float lerp(float from, float to, float weight) 
-{
-    return from + (to - from) * weight;
-}
-
 bool is_equal_approx(double p_left, double p_right, double p_tolerance) 
 {
     // Check for exact equality first, required to handle "infinity" values.
@@ -350,4 +351,22 @@ bool is_zero_approx(float p_value)
     return fabsf(p_value) < cast(float)GM_CMP_EPSILON;
 }
 
+double lerp(double from, double to, double weight) 
+{
+    return from + (to - from) * weight;
+}
 
+float lerp(float from, float to, float weight) 
+{
+    return from + (to - from) * weight;
+}
+
+float signf(float v) 
+{
+    return v > 0 ? +1.0f : (v < 0 ? -1.0f : 0.0f);
+}
+
+double sign(double v) 
+{
+    return v > 0 ? +1.0f : (v < 0 ? -1.0f : 0.0f);
+}
