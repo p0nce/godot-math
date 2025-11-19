@@ -1,3 +1,26 @@
+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/* Copyright (c) 2025 Guillaume Piolat                                    */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
 module godotmath;
 
 import core.stdc.math: sinf, cosf, sqrtf, atan2f, roundf, ceilf, floorf, fabsf, fmodf,
@@ -23,6 +46,9 @@ nothrow @nogc @safe:
         AXIS_Y,
     };
 
+    enum Vector2 ZERO  = Vector2( 0.0f,  0.0f);
+    enum Vector2 ONE   = Vector2( 1.0f,  1.0f);
+    enum Vector2 INF   = Vector2( GM_INF,  GM_INF);
     enum Vector2 LEFT  = Vector2(-1.0f,  0.0f);
     enum Vector2 RIGHT = Vector2( 1.0f,  0.0f);
     enum Vector2 UP    = Vector2( 0.0f, -1.0f);
@@ -95,7 +121,7 @@ nothrow @nogc @safe:
         float l = x * x + y * y;
         if (l != 0) 
         {
-            l = (l);
+            l = sqrtf(l);
             x /= l;
             y /= l;
         }
@@ -124,6 +150,21 @@ nothrow @nogc @safe:
     }
     Vector2 round() const => Vector2(.roundf(x), .roundf(y));
     Vector2 sign() const => Vector2(.signf(x), .signf(y));
+
+    Vector2 slerp(const Vector2 to, float weight) const 
+    {
+        float start_length_sq = length_squared();
+	    float end_length_sq = to.length_squared();
+	    if (start_length_sq == 0.0f || end_length_sq == 0.0f) 
+        {
+		    // Zero length vectors have no angle, so the best we can do is either lerp or throw an error.
+		    return lerp(to, weight);
+	    }
+	    float start_length = sqrtf(start_length_sq);
+	    float result_length = .lerp(start_length, sqrtf(end_length_sq), weight);
+	    float angle = angle_to(to);
+	    return rotated(angle * weight) * (result_length / start_length);
+    }
     
 
     // operators
@@ -148,6 +189,193 @@ nothrow @nogc @safe:
     Vector2 opUnary(string op)() const if (op == "-") => Vector2(-x, -y);
 
 }
+unittest
+{
+    assert(Vector2(0, 1) == Vector2(0, 1));
+}
+
+// Vector3
+struct Vector3
+{
+    nothrow @nogc @safe:
+
+    union { float x = 0; float width; }
+    union { float y = 0; float height; }
+    union { float z = 0; float depth; }
+
+    enum : int
+    {
+        AXIS_X,
+        AXIS_Y,
+        AXIS_Z,
+    }
+
+    // Common 3D direction vectors (assuming Y-up and Z-back/forward convention)
+    enum Vector3 ZERO    = Vector3( 0.0f,  0.0f,  0.0f);
+    enum Vector3 ONE     = Vector3( 1.0f,  1.0f,  1.0f);
+    enum Vector3 INF     = Vector3( GM_INF, GM_INF, GM_INF);
+    enum Vector3 LEFT    = Vector3(-1.0f,  0.0f,  0.0f);
+    enum Vector3 RIGHT   = Vector3( 1.0f,  0.0f,  0.0f);
+    enum Vector3 UP      = Vector3( 0.0f,  1.0f,  0.0f);
+    enum Vector3 DOWN    = Vector3( 0.0f, -1.0f,  0.0f);
+    enum Vector3 FORWARD = Vector3( 0.0f,  0.0f, -1.0f);
+    enum Vector3 BACK    = Vector3( 0.0f,  0.0f,  1.0f);
+
+    this(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+    Vector3 abs() const => Vector3(x < 0 ? -x : x, y < 0 ? -y : y, z < 0 ? -z : z);
+    float angle_to(in Vector3 to) => atan2f(cross(to).length(), dot(to));
+    Vector3 bezier_derivative(const Vector3 c1, const Vector3 c2, const Vector3 end, float p_t) const
+        => Vector3( .bezier_derivative(x, c1.x, c2.x, end.x, p_t),
+                    .bezier_derivative(y, c1.y, c2.y, end.y, p_t),
+                   .bezier_derivative(z, c1.z, c2.z, end.z, p_t) );
+    Vector3 bezier_interpolate(const Vector3 c1, const Vector3 c2, const Vector3 end, float p_t) const
+        => Vector3( .bezier_interpolate(x, c1.x, c2.x, end.x, p_t),
+                    .bezier_interpolate(y, c1.y, c2.y, end.y, p_t),
+                   .bezier_interpolate(z, c1.z, c2.z, end.z, p_t) );
+    Vector3 bounce(const Vector3 normal) const => -reflect(normal);
+    Vector3 ceil() const => Vector3(.ceilf(x), .ceilf(y), .ceilf(z));
+    Vector3 clamp(const Vector3 min, const Vector3 max) const 
+        => Vector3(.clampf(x, min.x, max.x), .clampf(y, min.y, max.y), .clampf(z, min.z, max.z));
+    Vector3 clampf(float min, float max) const 
+        => Vector3(.clampf(x, min, max), .clampf(y, min, max), .clampf(z, min, max));
+    Vector3 cross(const Vector3 other) const
+        => Vector3( y * other.z - z * other.y,
+                    z * other.x - x * other.z,
+                    x * other.y - y * other.x );
+    Vector3 cubic_interpolate(const Vector3 b, const Vector3 pre_a, const Vector3 post_b, float weight) const
+        => Vector3( .cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
+                    .cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight),
+                    .cubic_interpolate(z, b.z, pre_a.z, post_b.z, weight) );
+    Vector3 cubic_interpolate_in_time(const Vector3 b, const Vector3 pre_a, const Vector3 post_b, float weight, float b_t, float pre_a_t, float post_b_t) const
+        => Vector3( .cubic_interpolate_in_time(x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t),
+                    .cubic_interpolate_in_time(y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t),
+                    .cubic_interpolate_in_time(z, b.z, pre_a.z, post_b.z, weight, b_t, pre_a_t, post_b_t) );
+    Vector3 direction_to(const Vector3 to) const => (to - this).normalized();
+    float distance_squared_to(const Vector3 v) const 
+        => (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y) + (z - v.z) * (z - v.z);
+    float distance_to(const Vector3 v) const => sqrtf(distance_squared_to(v));
+    float dot(const Vector3 other) const => x * other.x + y * other.y + z * other.z;
+    Vector3 floor() const => Vector3(.floorf(x), .floorf(y), .floorf(z));
+    Vector3 inverse() const => Vector3(1.0f / x, 1.0f / y, 1.0f / z);
+    bool is_equal_approx(const Vector3 other) const
+        => .is_equal_approx(x, other.x) && .is_equal_approx(y, other.y) && .is_equal_approx(z, other.z);
+    bool is_finite() const => .isfinite(x) && .isfinite(y) && .isfinite(z);
+    bool is_normalized() const 
+        => .is_equal_approx(length_squared(), 1.0f, cast(float)GM_UNIT_EPSILON);
+    bool is_zero_approx() const 
+        => .is_zero_approx(x) && .is_zero_approx(y) && .is_zero_approx(z);
+    float length() const => sqrtf(x * x + y * y + z * z);
+    float length_squared() const => x * x + y * y + z * z;
+    Vector3 lerp(const Vector3 to, float weight) const 
+        => Vector3( .lerp(x, to.x, weight), .lerp(y, to.y, weight), .lerp(z, to.z, weight) );
+    Vector3 limit_length(float len) const
+    {
+        float l = length();
+        Vector3 v = this;
+        if (l > 0 && len < l)
+        {
+            v /= l;
+            v *= len;
+        }
+        return v;
+    }
+
+    Vector3 max(const Vector3 other) const 
+        => Vector3( x > other.x ? x : other.x, y > other.y ? y : other.y, z > other.z ? z : other.z );
+    int max_axis_index() const
+    {
+        if (x > y && x > z) return AXIS_X;
+        if (y > z) return AXIS_Y;
+        return AXIS_Z;
+    }
+    Vector3 maxf(float v) const 
+        => Vector3( x > v ? x : v, y > v ? y : v, z > v ? z : v );
+    Vector3 min(const Vector3 other) const 
+        => Vector3( x < other.x ? x : other.x, y < other.y ? y : other.y, z < other.z ? z : other.z );
+    int min_axis_index() const
+    {
+        if (x < y && x < z) return AXIS_X;
+        if (y < z) return AXIS_Y;
+        return AXIS_Z;
+    }
+    Vector3 minf(float v) const 
+        => Vector3( x < v ? x : v, y < v ? y : v, z < v ? z : v );
+    Vector3 move_toward(const Vector3 to, float delta) const
+    {
+        Vector3 v = this;
+        Vector3 vd = to - v;
+        float len = vd.length();
+        return len <= delta || len < cast(float)GM_CMP_EPSILON ? to : v + vd / len * delta;
+    }
+    void normalize()
+    {
+        float l = x * x + y * y + z * z;
+        if (l != 0)
+        {
+            l = sqrtf(l);
+            x /= l;
+            y /= l;
+            z /= l;
+        }
+    }
+    Vector3 normalized() const
+    {
+        Vector3 v = this;
+        v.normalize();
+        return v;
+    }
+    //TODO octahedron_decode
+    //TODO octahedron_encode
+    //TODO outer
+    Vector3 posmod(float mod) const => Vector3(.fposmod(x, mod), .fposmod(y, mod), .fposmod(z, mod));
+    Vector3 posmodv(const Vector3 modv) const => Vector3(.fposmod(x, modv.x), .fposmod(y, modv.y), .fposmod(z, modv.z));
+    Vector3 project(const Vector3 to) const => to * (dot(to) / to.length_squared());
+
+    Vector3 reflect(const Vector3 normal) const
+    {
+        assert(normal.is_normalized());
+        return normal * 2 * dot(normal) - this;
+    }
+
+// rotated() is omitted. In 3D, rotation requires an axis and an angle, 
+// or a full Transformation/Quaternion type for correct implementation.
+
+Vector3 round() const => Vector3(.roundf(x), .roundf(y), .roundf(z));
+Vector3 sign() const => Vector3(.signf(x), .signf(y), .signf(z));
+
+// slerp() is omitted as it relies on a defined rotation method.
+
+
+// operators
+Vector3 opBinary(string op)(const Vector3 v) const if (op == "*") => Vector3(x * v.x, y * v.y, z * v.z);
+Vector3 opBinary(string op)(float scale) const if (op == "*") => Vector3(x * scale, y * scale, z * scale);
+Vector3 opBinary(string op)(int scale) const if (op == "*") => Vector3(x * scale, y * scale, z * scale);
+
+Vector3 opBinary(string op)(const Vector3 v) const if (op == "+") => Vector3(x + v.x, y + v.y, z + v.z);
+Vector3 opBinary(string op)(const Vector3 v) const if (op == "-") => Vector3(x - v.x, y - v.y, z - v.z);
+
+Vector3 opBinary(string op)(const Vector3 v) const if (op == "/") => Vector3(x / v.x, y / v.y, z / v.z);
+Vector3 opBinary(string op)(float scale) const if (op == "/") => Vector3(x / scale, y / scale, z / scale);
+Vector3 opBinary(string op)(int scale) const if (op == "/") => Vector3(x / scale, y / scale, z / scale);
+
+Vector3 opOpAssign(string op)(const Vector3 v) if (op == "*") { x *= v.x; y *= v.y; z *= v.z; return this; }
+Vector3 opOpAssign(string op)(float scale) if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
+Vector3 opOpAssign(string op)(int scale) if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
+
+Vector3 opOpAssign(string op)(const Vector3 v) if (op == "+") { x += v.x; y += v.y; z += v.z; return this; }
+Vector3 opOpAssign(string op)(const Vector3 v) if (op == "-") { x -= v.x; y -= v.y; z -= v.z; return this; }
+
+Vector3 opOpAssign(string op)(const Vector3 v) if (op == "/") { x /= v.x; y /= v.y; z /= v.z; return this; }
+Vector3 opOpAssign(string op)(float scale) if (op == "/") { x /= scale; y /= scale; z /= scale; return this; }
+Vector3 opOpAssign(string op)(int scale) if (op == "/") { x /= scale; y /= scale; z /= scale; return this; }
+
+float opIndex(size_t n) const { assert(n < 3); switch (n) { case 0: return x; case 1: return y; default: return z; } }
+
+Vector3 opUnary(string op)() const if (op == "+") => this;
+Vector3 opUnary(string op)() const if (op == "-") => Vector3(-x, -y, -z);
+}
+
+/// See_also: https://docs.godotengine.org/en/stable/classes/class_vector3.html
 
 
 // godot math constants
