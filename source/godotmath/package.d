@@ -5,9 +5,10 @@
 */
 module godotmath;
 
-import std.math;
+import godotmath.globals;
 
 nothrow @nogc @safe:
+
 
 // Implementation done for: 
 // Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html
@@ -16,6 +17,8 @@ nothrow @nogc @safe:
 // Note: In case of semantic conflict, the way Godot does it is favoured.
 
 // TODO: lack of pure because eg. atan2f isn't pure.
+
+// TODO: != for vectors
 
 /* 
     ██╗   ██╗███████╗ ██████╗████████╗ ██████╗ ██████╗ ██████╗ 
@@ -26,12 +29,14 @@ nothrow @nogc @safe:
       ╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
 */
 /// See_also: https://docs.godotengine.org/en/stable/classes/class_vector2.html
-struct Vector2
+struct Vector2Impl(T)
 {
 nothrow @nogc @safe:
 
-    union { float x = 0; float width;  }
-    union { float y = 0; float height; }
+    alias V = Vector2Impl!T;
+
+    union { T x = 0; T width;  }
+    union { T y = 0; T height; }
 
     enum : int
     {
@@ -39,56 +44,55 @@ nothrow @nogc @safe:
         AXIS_Y,
     };
 
-    enum Vector2 ZERO  = Vector2( 0.0f,  0.0f);
-    enum Vector2 ONE   = Vector2( 1.0f,  1.0f);
-    enum Vector2 INF   = Vector2( GM_INF,  GM_INF);
-    enum Vector2 LEFT  = Vector2(-1.0f,  0.0f);
-    enum Vector2 RIGHT = Vector2( 1.0f,  0.0f);
-    enum Vector2 UP    = Vector2( 0.0f, -1.0f);
-    enum Vector2 DOWN  = Vector2( 0.0f,  1.0f);
+    enum V ZERO  = V( 0.0f,  0.0f);
+    enum V ONE   = V( 1.0f,  1.0f);
+    enum V INF   = V( GM_INF,  GM_INF);
+    enum V LEFT  = V(-1.0f,  0.0f);
+    enum V RIGHT = V( 1.0f,  0.0f);
+    enum V UP    = V( 0.0f, -1.0f);
+    enum V DOWN  = V( 0.0f,  1.0f);
 
     // All functions as defined at: 
-    this(float x, float y) { this.x = x; this.y = y; }
-    Vector2 abs() => Vector2(x < 0 ? -x : x, y < 0 ? -y : y); 
-    float angle() const => atan2(y, x);
-    float angle_to(in Vector2 to) const => atan2(cross(to), dot(to));
-    float angle_to_point(const Vector2 to) const => (to - this).angle();
-    float aspect() const => width / height;
-    Vector2 bezier_derivative(const Vector2 c1, const Vector2 c2, const Vector2 end, float p_t) const 
-       => Vector2( .bezier_derivative(x, c1.x, c2.x, end.x, p_t), 
-                   .bezier_derivative(y, c1.y, c2.y, end.y, p_t) );
-    Vector2 bezier_interpolate(const Vector2 c1, const Vector2 c2, const Vector2 end, float p_t) const 
-        => Vector2( .bezier_interpolate(x, c1.x, c2.x, end.x, p_t), 
-                    .bezier_interpolate(y, c1.y, c2.y, end.y, p_t) );
-    Vector2 bounce(const Vector2 normal) const => -reflect(normal);
-    Vector2 ceil() => Vector2(.ceil(x), .ceil(y));
-    Vector2 clamp(const Vector2 min, const Vector2 max) const => Vector2(.clampf(x, min.x, max.x), .clampf(y, min.y, max.y));
-    Vector2 clampf(float min, float max) const => Vector2(.clampf(x, min, max), .clampf(y, min, max));
-    float cross(const Vector2 p_other) const => x * p_other.y - y * p_other.x;
-    Vector2 cubic_interpolate(const Vector2 b, const Vector2 pre_a, const Vector2 post_b, float weight) const
-        => Vector2( .cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
-                    .cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight) );
-    Vector2 cubic_interpolate_in_time(const Vector2 b, const Vector2 pre_a, const Vector2 post_b, float weight, float b_t, float pre_a_t, float post_b_t) const
-        => Vector2( .cubic_interpolate_in_time(x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t),
-                    .cubic_interpolate_in_time(y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t) );
-    Vector2 direction_to(const Vector2 to) const => (to - this).normalized();
-    float distance_squared_to(const Vector2 v) const => (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y);
-    float distance_to(const Vector2 v) const => sqrt(distance_squared_to(v));
-    float dot(const Vector2 other) const => x * other.x + y * other.y;
-    Vector2 floor() => Vector2(.floor(x), .floor(y));
-    static Vector2 from_angle(float angle) => Vector2( .cos(angle), .sin(angle) );
-    bool is_equal_approx(const Vector2 other) => .is_equal_approx(x, other.x) && .is_equal_approx(y, other.y);
-
-    bool is_finite() const => .isFinite(x) && .isFinite(y);
-    bool is_normalized() const => .is_equal_approx(length_squared(), 1.0f, cast(float)GM_UNIT_EPSILON);
+    this(T x, T y) { this.x = x; this.y = y; }
+    V abs() => V(x < 0 ? -x : x, y < 0 ? -y : y); 
+    T angle() const => .atan2(y, x);
+    T angle_to(const V to) const => .atan2(cross(to), dot(to));
+    T angle_to_point(const V to) const => (to - this).angle();
+    T aspect() const => width / height;
+    V bezier_derivative(const V c1, const V c2, const V end, T p_t) const 
+       => V( .bezier_derivative(x, c1.x, c2.x, end.x, p_t), 
+             .bezier_derivative(y, c1.y, c2.y, end.y, p_t) );
+    V bezier_interpolate(const V c1, const V c2, const V end, T p_t) const 
+        => V( .bezier_interpolate(x, c1.x, c2.x, end.x, p_t), 
+              .bezier_interpolate(y, c1.y, c2.y, end.y, p_t) );
+    V bounce(const V normal) const => -reflect(normal);
+    V ceil() => V(.ceil(x), .ceil(y));
+    V clamp(const V min, const V max) const => V(.clampf(x, min.x, max.x), .clampf(y, min.y, max.y));
+    V clampf(T min, T max) const => V(.clampf(x, min, max), .clampf(y, min, max));
+    T cross(const V p_other) const => x * p_other.y - y * p_other.x;
+    V cubic_interpolate(const V b, const V pre_a, const V post_b, T weight) const
+        => V( .cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
+              .cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight) );
+    V cubic_interpolate_in_time(const V b, const V pre_a, const V post_b, T weight, T b_t, T pre_a_t, T post_b_t) const
+        => V( .cubic_interpolate_in_time(x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t),
+              .cubic_interpolate_in_time(y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t) );
+    V direction_to(const V to) const => (to - this).normalized();
+    T distance_squared_to(const V v) const => (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y);
+    T distance_to(const V v) const => sqrt(distance_squared_to(v));
+    T dot(const V other) const => x * other.x + y * other.y;
+    V floor() => V(.floor(x), .floor(y));
+    static V from_angle(T angle) => V( .cos(angle), .sin(angle) );
+    bool is_equal_approx(const V other) => .is_equal_approx(x, other.x) && .is_equal_approx(y, other.y);
+    bool is_finite() const => .is_finite(x) && .is_finite(y);
+    bool is_normalized() const => .is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
     bool is_zero_approx() const => .is_zero_approx(x) && .is_zero_approx(y);
-    float length() const => sqrt(x * x + y * y);
-    float length_squared() const => x * x + y * y;
-    Vector2 lerp(const Vector2 to, float weight) const => Vector2( .lerp(x, to.x, weight), .lerp(y, to.y, weight) );
-    Vector2 limit_length(float len) const 
+    T length() const => sqrt(x * x + y * y);
+    T length_squared() const => x * x + y * y;
+    V lerp(const V to, T weight) const => V( .lerp(x, to.x, weight), .lerp(y, to.y, weight) );
+    V limit_length(T len) const 
     {
-        float l = length();
-        Vector2 v = this;
+        T l = length();
+        V v = this;
         if (l > 0 && len < l) 
         {
             v /= l;
@@ -96,22 +100,22 @@ nothrow @nogc @safe:
         }
         return v;
     }
-    Vector2 max(const Vector2 other) const => Vector2( x > other.x ? x : other.x, y > other.y ? y : other.y );
+    V max(const V other) const => V( x > other.x ? x : other.x, y > other.y ? y : other.y );
     int max_axis_index() const => x < y ? AXIS_Y : AXIS_X;
-    Vector2 maxf(float v) const => Vector2( x > v ? x : v, y > v ? y : v );    
-    Vector2 min(const Vector2 other) const => Vector2( x < other.x ? x : other.x, y < other.y ? y : other.y );
+    V maxf(T v) const => V( x > v ? x : v, y > v ? y : v );    
+    V min(const V other) const => V( x < other.x ? x : other.x, y < other.y ? y : other.y );
     int min_axis_index() const => x < y ? AXIS_X : AXIS_Y;
-    Vector2 minf(float v) const => Vector2( x < v ? x : v, y < v ? y : v );
-    Vector2 move_toward(const Vector2 to, float delta) const 
+    V minf(T v) const => V( x < v ? x : v, y < v ? y : v );
+    V move_toward(const V to, T delta) const 
     {
-        Vector2 v = this;
-        Vector2 vd = to - v;
-        float len = vd.length();
-        return len <= delta || len < cast(float)GM_CMP_EPSILON ? to : v + vd / len * delta;
+        V v = this;
+        V vd = to - v;
+        T len = vd.length();
+        return len <= delta || len < cast(T)GM_CMP_EPSILON ? to : v + vd / len * delta;
     }
     void normalize()
     {
-        float l = x * x + y * y;
+        T l = x * x + y * y;
         if (l != 0) 
         {
             l = sqrt(l);
@@ -119,68 +123,87 @@ nothrow @nogc @safe:
             y /= l;
         }
     }
-    Vector2 normalized() const 
+    V normalized() const 
     {
-        Vector2 v = this;
+        V v = this;
         v.normalize();
         return v;
     }
-    Vector2 orthogonal() const => Vector2(y, -x);
-    Vector2 posmod(float mod) const => Vector2(.fposmod(x, mod), .fposmod(y, mod));
-    Vector2 posmodv(const Vector2 modv) const => Vector2(.fposmod(x, modv.x), .fposmod(y, modv.y));
-    Vector2 project(const Vector2 to) const => to * (dot(to) / to.length_squared());
-    Vector2 reflect(const Vector2 normal) const
+    V orthogonal() const => V(y, -x);
+    V posmod(T mod) const => V(.fposmod(x, mod), .fposmod(y, mod));
+    V posmodv(const V modv) const => V(.fposmod(x, modv.x), .fposmod(y, modv.y));
+    V project(const V to) const => to * (dot(to) / to.length_squared());
+    V reflect(const V normal) const
     {
         assert(normal.is_normalized());
         return normal * 2 * dot(normal) - this;
     }
-    Vector2 rotated(float by_radians) const 
+    V rotated(T by_radians) const 
     {
-        float sine = .sin(by_radians);
-        float cosi = .cos(by_radians);
-        return Vector2(x * cosi - y * sine,
-                       x * sine + y * cosi);
+        T sine = .sin(by_radians);
+        T cosi = .cos(by_radians);
+        return V(x * cosi - y * sine,
+                 x * sine + y * cosi);
     }
-    Vector2 round() const => Vector2(.round(x), .round(y));
-    Vector2 sign() const => Vector2(.signf(x), .signf(y));
+    V round() const => V(.round(x), .round(y));
+    V sign() const  => V(.sign(x), .sign(y));
 
-    Vector2 slerp(const Vector2 to, float weight) const 
+    V slerp(const V to, T weight) const 
     {
-        float start_length_sq = length_squared();
-	    float end_length_sq = to.length_squared();
-	    if (start_length_sq == 0.0f || end_length_sq == 0.0f) 
+        T start_length_sq = length_squared();
+	    T end_length_sq = to.length_squared();
+	    if (start_length_sq == 0 || end_length_sq == 0) 
         {
 		    // Zero length vectors have no angle, so the best we can do is either lerp or throw an error.
 		    return lerp(to, weight);
 	    }
-	    float start_length = .sqrt(start_length_sq);
-	    float result_length = .lerp(start_length, .sqrt(end_length_sq), weight);
-	    float angle = angle_to(to);
+	    T start_length = .sqrt(start_length_sq);
+	    T result_length = .lerp(start_length, .sqrt(end_length_sq), weight);
+	    T angle = angle_to(to);
 	    return rotated(angle * weight) * (result_length / start_length);
     }
-    
 
     // operators
-    Vector2 opBinary(string op)(const Vector2 v) const if (op == "*") => Vector2(x * v.x, y * v.y);
-    Vector2 opBinary(string op)(float scale) const if (op == "*") => Vector2(x * scale, y * scale);
-    Vector2 opBinary(string op)(int scale) const if (op == "*") => Vector2(x * scale, y * scale);
-    Vector2 opBinary(string op)(const Vector2 v) const if (op == "+") => Vector2(x + v.x, y + v.y);
-    Vector2 opBinary(string op)(const Vector2 v) const if (op == "-") => Vector2(x - v.x, y - v.y);
-    Vector2 opBinary(string op)(const Vector2 v) const if (op == "/") => Vector2(x / v.x, y / v.y);
-    Vector2 opBinary(string op)(float scale) const if (op == "/") => Vector2(x / scale, y / scale);
-    Vector2 opBinary(string op)(int scale) const if (op == "/") => Vector2(x / scale, y / scale);
-    Vector2 opOpAssign(string op)(const Vector2 v) if (op == "*") { x *= v.x; y *= v.y; return this; }
-    Vector2 opOpAssign(string op)(float scale) if (op == "*") { x *= scale; y *= scale; return this; }
-    Vector2 opOpAssign(string op)(int scale) if (op == "*") { x *= scale; y *= scale; return this; }
-    Vector2 opOpAssign(string op)(const Vector2 v) if (op == "+") { x += v.x; y += v.y; return this; }
-    Vector2 opOpAssign(string op)(const Vector2 v) if (op == "-") { x -= v.x; y -= v.y; return this; }
-    Vector2 opOpAssign(string op)(const Vector2 v) if (op == "/") { x /= v.x; y /= v.y; return this; }
-    Vector2 opOpAssign(string op)(float scale) if (op == "/") { x /= scale; y /= scale; return this; }
-    Vector2 opOpAssign(string op)(int scale) if (op == "/") { x /= scale; y /= scale; return this; }
-    ref inout(float) opIndex(size_t n) inout return { assert(n < 2); return n ? y : x; }
-    Vector2 opUnary(string op)() const if (op == "+") => this;    
-    Vector2 opUnary(string op)() const if (op == "-") => Vector2(-x, -y);
+    ref inout(T) opIndex(size_t n) inout return { assert(n < 2); return n ? y : x; }
 
+    V opBinary(string op)(const V v)   const if (op == "*") => V(x * v.x  , y * v.y  );
+    V opBinary(string op)(float scale) const if (op == "*") => V(x * scale, y * scale);
+    V opBinary(string op)(int scale)   const if (op == "*") => V(x * scale, y * scale);
+    V opBinary(string op)(const V v)   const if (op == "+") => V(x + v.x  , y + v.y  );
+    V opBinary(string op)(const V v)   const if (op == "-") => V(x - v.x  , y - v.y  );
+    V opBinary(string op)(const V v)   const if (op == "/") => V(x / v.x  , y / v.y  );
+    V opBinary(string op)(float scale) const if (op == "/") => V(x / scale, y / scale);
+    V opBinary(string op)(int scale)   const if (op == "/") => V(x / scale, y / scale);
+
+    V opOpAssign(string op)(const V v)   if (op == "*") { x *= v.x;   y *= v.y;   return this; }
+    V opOpAssign(string op)(float scale) if (op == "*") { x *= scale; y *= scale; return this; }
+    V opOpAssign(string op)(int scale)   if (op == "*") { x *= scale; y *= scale; return this; }
+    V opOpAssign(string op)(const V v)   if (op == "+") { x += v.x;   y += v.y;   return this; }
+    V opOpAssign(string op)(const V v)   if (op == "-") { x -= v.x;   y -= v.y;   return this; }
+    V opOpAssign(string op)(const V v)   if (op == "/") { x /= v.x;   y /= v.y;   return this; }
+    V opOpAssign(string op)(float scale) if (op == "/") { x /= scale; y /= scale; return this; }
+    V opOpAssign(string op)(int scale)   if (op == "/") { x /= scale; y /= scale; return this; }
+    
+    V opUnary(string op)() const if (op == "+") => this;    
+    V opUnary(string op)() const if (op == "-") => V(-x, -y);
+}
+
+alias Vector2 = Vector2Impl!float;
+alias Vector2d = Vector2Impl!double;
+
+unittest
+{
+    Vector2 a = Vector2(1.2f, 4);
+    a += Vector2.ONE;
+    assert(a.is_equal_approx( Vector2(2.2f, 5)));
+    a = a * Vector2.ZERO;
+    assert(a.is_approx_zero);
+
+    Vector2d b = Vector2d(2.5, 4.0) + 4.0;
+    b /= 2.0;
+    assert(b.is_equal_approx( Vector2d(3.25, 4.0)));
+    b = b * Vector2d.ZERO;
+    assert(b.is_approx_zero);
 }
 
 
@@ -197,7 +220,7 @@ nothrow @nogc @safe:
     ██║   ██║█████╗  ██║        ██║   ██║   ██║██████╔╝ █████╔╝
     ╚██╗ ██╔╝██╔══╝  ██║        ██║   ██║   ██║██╔══██╗ ╚═══██╗
      ╚████╔╝ ███████╗╚██████╗   ██║   ╚██████╔╝██║  ██║██████╔╝
-  ╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═════╝ 
+      ╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═════╝ 
 */
 /// See_also: https://docs.godotengine.org/en/stable/classes/class_vector3.html
 struct Vector3
@@ -264,7 +287,7 @@ nothrow @nogc @safe:
     Vector3 inverse() const => Vector3(1.0f / x, 1.0f / y, 1.0f / z);
     bool is_equal_approx(const Vector3 other) const
         => .is_equal_approx(x, other.x) && .is_equal_approx(y, other.y) && .is_equal_approx(z, other.z);
-    bool is_finite() const => .isFinite(x) && .isFinite(y) && .isFinite(z);
+    bool is_finite() const => .is_finite(x) && .is_finite(y) && .is_finite(z);
     bool is_normalized() const 
         => .is_equal_approx(length_squared(), 1.0f, cast(float)GM_UNIT_EPSILON);
     bool is_zero_approx() const 
@@ -368,9 +391,16 @@ nothrow @nogc @safe:
     }
 
     Vector3 round() const => Vector3(.round(x), .round(y), .round(z));
-    Vector3 sign() const => Vector3(.signf(x), .signf(y), .signf(z));
+    Vector3 sign() const => Vector3(.sign(x), .sign(y), .sign(z));
 
-    // float signed_angle_to(to: Vector3, axis: Vector3
+    float signed_angle_to(const Vector3 to, const Vector3 axis)
+    {
+        Vector3 cross_to = cross(to);
+        float unsigned_angle = atan2(cross_to.length(), dot(to));
+        float sign = cross_to.dot(axis);
+        return (sign < 0) ? -unsigned_angle : unsigned_angle;
+    }
+
     // Vector3 slerp(to: Vector3, weight: float) const 
 
 // Vector3 slide(n: Vector3) const
@@ -542,23 +572,6 @@ nothrow @nogc @safe:
 }
 
 
-// godot math constants
-enum double GM_SQRT2  = 1.4142135623730950488016887242;
-enum double GM_SQRT3  = 1.7320508075688772935274463415059;
-enum double GM_SQRT12 = 0.7071067811865475244008443621048490;
-enum double GM_SQRT13 = 0.57735026918962576450914878050196;
-enum double GM_LN2    = 0.6931471805599453094172321215;
-enum double GM_TAU    = 6.2831853071795864769252867666;
-enum double GM_PI     = 3.1415926535897932384626433833;
-enum double GM_E      = 2.7182818284590452353602874714;
-enum double GM_INF    = double.infinity;
-enum double GM_NaN    = double.nan;
-
-enum double GM_CMP_EPSILON = 0.00001;
-enum double GM_CMP_EPSILON2 = (GM_CMP_EPSILON * GM_CMP_EPSILON);
-
-// PRECISE_MATH_CHECKS
-enum GM_UNIT_EPSILON = 0.00001;
 
 
 // EulerOrder
@@ -573,206 +586,5 @@ enum : EulerOrder
     EULER_ORDER_ZYX = 5,
 }
 
-// math funcs
 
-double bezier_interpolate(double p_start, double p_control_1, double p_control_2, double p_end, double p_t) 
-{
-    double omt = (1.0 - p_t);
-    double omt2 = omt * omt;
-    double omt3 = omt2 * omt;
-    double t2 = p_t * p_t;
-    double t3 = t2 * p_t;
-    return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0 + p_control_2 * omt * t2 * 3.0 + p_end * t3;
-}
-
-float bezier_interpolate(float p_start, float p_control_1, float p_control_2, float p_end, float p_t) 
-{
-    float omt = (1.0f - p_t);
-    float omt2 = omt * omt;
-    float omt3 = omt2 * omt;
-    float t2 = p_t * p_t;
-    float t3 = t2 * p_t;
-    return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0f + p_control_2 * omt * t2 * 3.0f + p_end * t3;
-}
-
-double bezier_derivative(double p_start, double p_control_1, 
-    double p_control_2, double p_end, double p_t) 
-{
-    double omt = (1.0 - p_t);
-    double omt2 = omt * omt;
-    double t2 = p_t * p_t;
-
-    double d = (p_control_1 - p_start) * 3.0 * omt2 + (p_control_2 - p_control_1) * 6.0 * omt * p_t + (p_end - p_control_2) * 3.0 * t2;
-    return d;
-}
-
-float bezier_derivative(float p_start, float p_control_1, 
-    float p_control_2, float p_end, float p_t) 
-{
-    float omt = (1.0f - p_t);
-    float omt2 = omt * omt;
-    float t2 = p_t * p_t;
-    float d = (p_control_1 - p_start) * 3.0f * omt2 + (p_control_2 - p_control_1) * 6.0f * omt * p_t + (p_end - p_control_2) * 3.0f * t2;
-    return d;
-}
-
-float clampf(float value, float min, float max)
-{
-    if (value < min) return min;
-    if (value > max) return max;
-    return value;
-}
-
-int clampi(int value, int min, int max)
-{
-    if (value < min) return min;
-    if (value > max) return max;
-    return value;
-}
-
-double cubic_interpolate(double p_from, double p_to, double p_pre, double p_post, double p_weight) 
-{
-    return 0.5 *
-            ((p_from * 2.0) +
-                    (-p_pre + p_to) * p_weight +
-                    (2.0 * p_pre - 5.0 * p_from + 4.0 * p_to - p_post) * (p_weight * p_weight) +
-                    (-p_pre + 3.0 * p_from - 3.0 * p_to + p_post) * (p_weight * p_weight * p_weight));
-}
-
-float cubic_interpolate(float p_from, float p_to, float p_pre, float p_post, float p_weight) 
-{
-    return 0.5f *
-            ((p_from * 2.0f) +
-                    (-p_pre + p_to) * p_weight +
-                    (2.0f * p_pre - 5.0f * p_from + 4.0f * p_to - p_post) * (p_weight * p_weight) +
-                    (-p_pre + 3.0f * p_from - 3.0f * p_to + p_post) * (p_weight * p_weight * p_weight));
-}
-
-double cubic_interpolate_in_time(double p_from, double p_to, double p_pre, double p_post, double p_weight,
-        double p_to_t, double p_pre_t, double p_post_t) 
-{
-    /* Barry-Goldman method */
-    double t = lerp(0.0, p_to_t, p_weight);
-    double a1 = lerp(p_pre, p_from, p_pre_t == 0 ? 0.0 : (t - p_pre_t) / -p_pre_t);
-    double a2 = lerp(p_from, p_to, p_to_t == 0 ? 0.5 : t / p_to_t);
-    double a3 = lerp(p_to, p_post, p_post_t - p_to_t == 0 ? 1.0 : (t - p_to_t) / (p_post_t - p_to_t));
-    double b1 = lerp(a1, a2, p_to_t - p_pre_t == 0 ? 0.0 : (t - p_pre_t) / (p_to_t - p_pre_t));
-    double b2 = lerp(a2, a3, p_post_t == 0 ? 1.0 : t / p_post_t);
-    return lerp(b1, b2, p_to_t == 0 ? 0.5 : t / p_to_t);
-}
-float cubic_interpolate_in_time(float p_from, float p_to, float p_pre, float p_post, float p_weight,
-        float p_to_t, float p_pre_t, float p_post_t) 
-{
-    /* Barry-Goldman method */
-    float t = lerp(0.0f, p_to_t, p_weight);
-    float a1 = lerp(p_pre, p_from, p_pre_t == 0 ? 0.0f : (t - p_pre_t) / -p_pre_t);
-    float a2 = lerp(p_from, p_to, p_to_t == 0 ? 0.5f : t / p_to_t);
-    float a3 = lerp(p_to, p_post, p_post_t - p_to_t == 0 ? 1.0f : (t - p_to_t) / (p_post_t - p_to_t));
-    float b1 = lerp(a1, a2, p_to_t - p_pre_t == 0 ? 0.0f : (t - p_pre_t) / (p_to_t - p_pre_t));
-    float b2 = lerp(a2, a3, p_post_t == 0 ? 1.0f : t / p_post_t);
-    return lerp(b1, b2, p_to_t == 0 ? 0.5f : t / p_to_t);
-}
-
-double fposmod(double x, double y) 
-{
-    double value = fmod(x, y);
-    if (((value < 0) && (y > 0)) || ((value > 0) && (y < 0))) 
-    {
-        value += y;
-    }
-    value += 0.0;
-    return value;
-}
-
-float fposmod(float x, float y) 
-{
-    float value = fmod(x, y);
-    if (((value < 0) && (y > 0)) || ((value > 0) && (y < 0))) 
-    {
-        value += y;
-    }
-    value += 0.0f;
-    return value;
-}
-
-bool is_equal_approx(double p_left, double p_right, double p_tolerance) 
-{
-    // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right) 
-    {
-        return true;
-    }
-    // Then check for approximate equality.
-    return abs(p_left - p_right) < p_tolerance;
-}
-
-bool is_equal_approx(float p_left, float p_right, float p_tolerance) 
-{
-    // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right)
-        return true;
-
-    // Then check for approximate equality.
-    return abs(p_left - p_right) < p_tolerance;
-}
-
-bool is_equal_approx(double p_left, double p_right) 
-{
-    // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right) 
-    {
-        return true;
-    }
-    // Then check for approximate equality.
-    double tolerance = GM_CMP_EPSILON * fabs(p_left);
-    if (tolerance < GM_CMP_EPSILON) 
-    {
-        tolerance = GM_CMP_EPSILON;
-    }
-    return fabs(p_left - p_right) < tolerance;
-}
-
-bool is_equal_approx(float p_left, float p_right) 
-{
-    // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right) {
-        return true;
-    }
-    // Then check for approximate equality.
-    float tolerance = cast(float)GM_CMP_EPSILON * abs(p_left);
-    if (tolerance < cast(float)GM_CMP_EPSILON) 
-    {
-        tolerance = cast(float)GM_CMP_EPSILON;
-    }
-    return abs(p_left - p_right) < tolerance;
-}
-
-bool is_zero_approx(double p_value) 
-{
-    return abs(p_value) < GM_CMP_EPSILON;
-}
-bool is_zero_approx(float p_value) 
-{
-    return abs(p_value) < cast(float)GM_CMP_EPSILON;
-}
-
-double lerp(double from, double to, double weight) 
-{
-    return from + (to - from) * weight;
-}
-
-float lerp(float from, float to, float weight) 
-{
-    return from + (to - from) * weight;
-}
-
-float signf(float v) 
-{
-    return v > 0 ? +1.0f : (v < 0 ? -1.0f : 0.0f);
-}
-
-double sign(double v) 
-{
-    return v > 0 ? +1.0f : (v < 0 ? -1.0f : 0.0f);
-}
 

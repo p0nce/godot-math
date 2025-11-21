@@ -1,6 +1,7 @@
 module raymath;
 
 import godotmath;
+import godotmath.globals;
 
 import core.stdc.math: sinf, cosf, floorf;
 
@@ -45,7 +46,14 @@ int FloatEquals(float x, float y)
     return is_equal_approx(x, y);
 }
 
-// Vector2 math
+/* 
+██╗   ██╗███████╗ ██████╗████████╗ ██████╗ ██████╗ ██████╗ 
+██║   ██║██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗╚════██╗
+██║   ██║█████╗  ██║        ██║   ██║   ██║██████╔╝ █████╔╝
+╚██╗ ██╔╝██╔══╝  ██║        ██║   ██║   ██║██╔══██╗██╔═══╝ 
+╚████╔╝ ███████╗╚██████╗   ██║   ╚██████╔╝██║  ██║███████╗
+╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
+*/
 
 /// Vector with components value 0.0f
 Vector2 Vector2Zero() => Vector2(0, 0);
