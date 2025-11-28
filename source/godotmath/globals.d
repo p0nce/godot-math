@@ -12,6 +12,7 @@ nothrow @nogc @safe:
 // INTERNAL USE ONLY, unlike Godot where this is part of API.
 
 // godot math constants
+// FUTURE: use the better constants from std.math, with hex float precision
 enum double GM_SQRT2  = 1.4142135623730950488016887242;
 enum double GM_SQRT3  = 1.7320508075688772935274463415059;
 enum double GM_SQRT12 = 0.7071067811865475244008443621048490;

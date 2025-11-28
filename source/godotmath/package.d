@@ -170,6 +170,7 @@ nothrow @nogc @safe:
     V opBinary(string op)(float scale) const if (op == "*") => V(x * scale, y * scale);
     V opBinary(string op)(int scale)   const if (op == "*") => V(x * scale, y * scale);
     V opBinary(string op)(const V v)   const if (op == "+") => V(x + v.x  , y + v.y  );
+    V opBinary(string op)(float add)   const if (op == "+") => V(x + add  , y + add  );
     V opBinary(string op)(const V v)   const if (op == "-") => V(x - v.x  , y - v.y  );
     V opBinary(string op)(const V v)   const if (op == "/") => V(x / v.x  , y / v.y  );
     V opBinary(string op)(float scale) const if (op == "/") => V(x / scale, y / scale);
@@ -179,6 +180,7 @@ nothrow @nogc @safe:
     V opOpAssign(string op)(float scale) if (op == "*") { x *= scale; y *= scale; return this; }
     V opOpAssign(string op)(int scale)   if (op == "*") { x *= scale; y *= scale; return this; }
     V opOpAssign(string op)(const V v)   if (op == "+") { x += v.x;   y += v.y;   return this; }
+    V opOpAssign(string op)(float add)   if (op == "+") { x += add;   y += add;   return this; }
     V opOpAssign(string op)(const V v)   if (op == "-") { x -= v.x;   y -= v.y;   return this; }
     V opOpAssign(string op)(const V v)   if (op == "/") { x /= v.x;   y /= v.y;   return this; }
     V opOpAssign(string op)(float scale) if (op == "/") { x /= scale; y /= scale; return this; }
@@ -197,13 +199,13 @@ unittest
     a += Vector2.ONE;
     assert(a.is_equal_approx( Vector2(2.2f, 5)));
     a = a * Vector2.ZERO;
-    assert(a.is_approx_zero);
+    assert(a.is_zero_approx);
 
     Vector2d b = Vector2d(2.5, 4.0) + 4.0;
     b /= 2.0;
     assert(b.is_equal_approx( Vector2d(3.25, 4.0)));
     b = b * Vector2d.ZERO;
-    assert(b.is_approx_zero);
+    assert(b.is_zero_approx);
 }
 
 
