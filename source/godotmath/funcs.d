@@ -15,9 +15,8 @@ import numem.core.traits;
 static import core.stdc.math;
 
 // See: https://docs.godotengine.org/en/stable/classes/class_%40globalscope.html
-// Those are math functions defined at global scope in Godot Math.
-// INTERNAL USE ONLY, unlike Godot where this is part of API.
-
+// Those are math functions defined at global scope in Godot Math, so here they
+// are prefixed with a gm_*** prefix to avoid polluting global namespace.
 
 pure nothrow @nogc @safe:
 
@@ -56,34 +55,25 @@ double gm_acosh(double x) => assumePureNothrowNogc(&core.stdc.math.acosh, x);
 float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&core.stdc.math.asinf, x));
 double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&core.stdc.math.asin, x));
 float  gm_asinh(float x) => assumePureNothrowNogc(&core.stdc.math.asinhf, x);
-double gm_asinh(double x) => assumePureNothrowNogc(&core.stdc.math.acosh, x);
-float  gm_atan2(float y, float x) => assumePureNothrowNogc(&core.stdc.math.atan2, y, x);
+double gm_asinh(double x) => assumePureNothrowNogc(&core.stdc.math.asinh, x);
+float  gm_atan2(float y, float x) => assumePureNothrowNogc(&core.stdc.math.atan2f, y, x);
 double gm_atan2(double y, double x) => assumePureNothrowNogc(&core.stdc.math.atan2, y, x);
-
 float  gm_ceil(float x)  => core.stdc.math.ceilf(x);
 double gm_ceil(double x) => core.stdc.math.ceil(x);
-
 float  gm_cos(float x)  => core.stdc.math.cosf(x);
 double gm_cos(double x) => core.stdc.math.cos(x);
-
 float  gm_floor(float x)  => core.stdc.math.floorf(x);
 double gm_floor(double x) => core.stdc.math.floor(x);
-
 float gm_fmod(float x, float y) => assumePureNothrowNogc(&core.stdc.math.fmodf, x, y);
 double gm_fmod(double x, double y) => assumePureNothrowNogc(&core.stdc.math.fmod, x, y);
-
 float  gm_is_finite(float x)  => core.stdc.math.isfinite(x);
 double gm_is_finite(double x) => core.stdc.math.isfinite(x);
-
 float  gm_round(float x)  => core.stdc.math.roundf(x);
 double gm_round(double x) => core.stdc.math.round(x);
-
 float  gm_sign(float v)  => (v > 0) ? 1.0f : (v < 0 ? -1.0f : 0.0f);
-double gm_sign(double v) =>(v > 0) ? 1.0f : (v < 0 ? -1.0f : 0.0f);
-
+double gm_sign(double v) =>(v > 0) ? 1.0 : (v < 0 ? -1.0 : 0.0);
 float  gm_sin(float x)  => core.stdc.math.sinf(x);
 double gm_sin(double x) => core.stdc.math.sin(x);
-
 float  gm_sqrt(float x)  => assumePureNothrowNogc(&core.stdc.math.sqrtf, x);
 double gm_sqrt(double x) => assumePureNothrowNogc(&core.stdc.math.sqrt, x);
 
