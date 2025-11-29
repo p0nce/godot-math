@@ -1,11 +1,9 @@
 module raymath;
 
 import godotmath;
-import godotmath.globals;
 
-import core.stdc.math: sinf, cosf, floorf;
 
-nothrow @nogc @safe:
+pure nothrow @nogc @safe:
 
 /// Clamp float value
 float Clamp(float value, float min, float max)
@@ -37,13 +35,13 @@ float Remap(float value, float inputStart, float inputEnd, float outputStart, fl
 /// Wrap input value from min to max
 float Wrap(float value, float min, float max)
 {
-    return value - (max - min)*floorf((value - min)/(max - min));
+    return value - (max - min)*gm_floor((value - min)/(max - min));
 }
 
 /// Check whether two given floats are almost equal
 int FloatEquals(float x, float y)
 {
-    return is_equal_approx(x, y);
+    return gm_is_equal_approx(x, y);
 }
 
 /* 
@@ -123,8 +121,8 @@ Vector2 Vector2Reflect(Vector2 v, Vector2 normal)
 /// Rotate vector by angle
 Vector2 Vector2Rotate(Vector2 v, float angle)
 {
-    float c = cosf(angle);
-    float s = sinf(angle);
+    float c = gm_cos(angle);
+    float s = gm_sin(angle);
     return Vector2(c * v.x - s * v.y, s * v.x + c * v.y);
 }
 
