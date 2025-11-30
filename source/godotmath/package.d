@@ -299,9 +299,13 @@ struct Vector3Impl(T)
 {
 pure nothrow @nogc @safe:
 
-    alias V = Vector3Impl!T;
-    alias V2 = Vector2Impl!T;
-    enum bool isFloat = isFloatingPoint!T;
+    private 
+    {
+        alias V = Vector3Impl!T,
+              V2 = Vector2Impl!T;
+
+        enum bool isFloat = isFloatingPoint!T;
+    }
 
     union { T x = 0; T width;  }
     union { T y = 0; T height; }
@@ -329,7 +333,7 @@ pure nothrow @nogc @safe:
     this(T x, T y, T z) { this.x = x; this.y = y; this.z = z; }
     this(T[3] v) { this.x = v[0]; this.y = v[1]; this.z = v[2];}
     V abs() const => V(x < 0 ? -x : x, y < 0 ? -y : y, z < 0 ? -z : z);
-    T angle_to(in V to) => gm_atan2(cross(to).length(), dot(to));
+    T angle_to(const V to) const => gm_atan2(cross(to).length(), dot(to));
     V bezier_derivative(const V c1, const V c2, const V end, T t) const
         => V( gm_bezier_derivative(x, c1.x, c2.x, end.x, t),
               gm_bezier_derivative(y, c1.y, c2.y, end.y, t),
@@ -460,8 +464,16 @@ pure nothrow @nogc @safe:
         o.y = o.y * 0.5f + 0.5f;
         return o;
     }
+    
+    BasisImpl!T outer(const V p_with) const 
+    {
+        BasisImpl!T basis;
+        basis.rows[0] = V(x * p_with.x, x * p_with.y, x * p_with.z);
+        basis.rows[1] = V(y * p_with.x, y * p_with.y, y * p_with.z);
+        basis.rows[2] = V(z * p_with.x, z * p_with.y, z * p_with.z);
+        return basis;
+    }
 
-    //TODO outer
     V posmod(T mod) const => V(gm_fposmod(x, mod), gm_fposmod(y, mod), gm_fposmod(z, mod));
     V posmodv(const V modv) const => V(gm_fposmod(x, modv.x), gm_fposmod(y, modv.y), gm_fposmod(z, modv.z));
     V project(const V to) const => to * (dot(to) / to.length_squared());
@@ -508,7 +520,24 @@ pure nothrow @nogc @safe:
         return (sign < 0) ? -unsigned_angle : unsigned_angle;
     }
 
-    // Vector3 slerp(to: Vector3, weight: float) const 
+    V slerp(const V to, T weight) const 
+    {
+        T start_length_sq = length_squared();
+        T end_length_sq = to.length_squared();
+        if (start_length_sq == 0 || end_length_sq == 0) 
+            return lerp(to, weight);
+
+        V axis = cross(to);
+        T axis_length_sq = axis.length_squared();
+        if (axis_length_sq == 0) 
+            return lerp(to, weight);
+
+        axis /= gm_sqrt(axis_length_sq);
+        T start_length = gm_sqrt(start_length_sq);
+        T result_length = gm_lerp(start_length, gm_sqrt(end_length_sq), weight);
+        T angle = angle_to(to);
+        return rotated(axis, angle * weight) * (result_length / start_length);
+    }
 
     V slide(const V normal) const => this - normal * dot(normal);
     V snapped(const(V) step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y),  gm_snapped(z, step.z));

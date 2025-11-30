@@ -2,7 +2,7 @@ module vector;
 
 import godotmath;
 
-@("Vector")
+@("Vector basics")
 unittest 
 {
     Vector2 a = Vector2(1.2f, 4);
@@ -36,6 +36,15 @@ unittest
     Vector3 B = Vector3.octahedron_decode(down.octahedron_encode);
     assert(up.is_equal_approx(A));
     assert(down.is_equal_approx(B));
+}
+
+@("Vector slerp")
+unittest
+{
+    Vector3 s = Vector3.UP.slerp(Vector3.LEFT, 0.5);
+    Vector3d sd = Vector3d.UP.slerp(Vector3d.LEFT, 0.5);
+    assert(s.is_equal_approx(Vector3(-1, 1, 0).normalized));
+    assert(sd.is_equal_approx(Vector3d(-1, 1, 0).normalized));
 }
 
 
