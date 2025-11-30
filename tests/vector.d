@@ -27,7 +27,16 @@ unittest
     assert(cast(Vector2d)a2 != Vector2d.ZERO);
 }
 
-   
+@("Octahedron encoding")
+unittest
+{
+    Vector3 up = Vector3.UP;
+    Vector3 down = Vector3.DOWN;
+    Vector3 A = Vector3.octahedron_decode(up.octahedron_encode);
+    Vector3 B = Vector3.octahedron_decode(down.octahedron_encode);
+    assert(up.is_equal_approx(A));
+    assert(down.is_equal_approx(B));
+}
 
 
 

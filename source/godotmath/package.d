@@ -300,6 +300,7 @@ struct Vector3Impl(T)
 pure nothrow @nogc @safe:
 
     alias V = Vector3Impl!T;
+    alias V2 = Vector2Impl!T;
     enum bool isFloat = isFloatingPoint!T;
 
     union { T x = 0; T width;  }
@@ -429,8 +430,37 @@ pure nothrow @nogc @safe:
         v.normalize();
         return v;
     }
-    //TODO octahedron_decode
-    //TODO octahedron_encode
+    
+    static V octahedron_decode(const V2 oct) 
+    {
+        V2 f = V2(oct.x * 2 - 1, oct.y * 2 - 1);
+        V n = V(f.x, f.y, 1 - gm_abs(f.x) - gm_abs(f.y));
+        T t = gm_clamp(-n.z, cast(T)0, cast(T)1);
+        n.x += n.x >= 0 ? -t : t;
+        n.y += n.y >= 0 ? -t : t;
+        return n.normalized();
+    }
+
+    V2 octahedron_encode() const
+    {
+        V n = this;
+        n /= gm_abs(n.x) + gm_abs(n.y) + gm_abs(n.z);
+        V2 o;
+        if (n.z >= 0) 
+        {
+            o.x = n.x;
+            o.y = n.y;
+        } 
+        else 
+        {
+            o.x = (1 - gm_abs(n.y)) * (n.x >= 0 ? 1 : -1);
+            o.y = (1 - gm_abs(n.x)) * (n.y >= 0 ? 1 : -1);
+        }
+        o.x = o.x * 0.5f + 0.5f;
+        o.y = o.y * 0.5f + 0.5f;
+        return o;
+    }
+
     //TODO outer
     V posmod(T mod) const => V(gm_fposmod(x, mod), gm_fposmod(y, mod), gm_fposmod(z, mod));
     V posmodv(const V modv) const => V(gm_fposmod(x, modv.x), gm_fposmod(y, modv.y), gm_fposmod(z, modv.z));
