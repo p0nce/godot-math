@@ -1,5 +1,5 @@
 /**
-Abstract over C math functions to get purity working.
+Abstract over C math functions to get `pure` working.
 The issue is that core.stdc.math is missing annotations, so 
 this is a workaround, also provide float/double overloads.
 
@@ -12,7 +12,7 @@ module godotmath.funcs;
 
 import numem;
 import numem.core.traits;
-static import core.stdc.math;
+static import libc = core.stdc.math;
 
 // See: https://docs.godotengine.org/en/stable/classes/class_%40globalscope.html
 // Those are math functions defined at global scope in Godot Math, so here they
@@ -41,41 +41,42 @@ enum double GM_CMP_EPSILON2 = (GM_CMP_EPSILON * GM_CMP_EPSILON);
 enum GM_UNIT_EPSILON = 0.00001;
 
 
-float gm_abs(float x) => core.stdc.math.fabsf(x);
-double gm_abs(double x) => core.stdc.math.fabs(x);
-int gm_absi(int x) => (x >= 0 ? x : -x);
+float gm_abs(float x) => libc.fabsf(x);
+double gm_abs(double x) => libc.fabs(x);
+int gm_abs(int x) => (x >= 0 ? x : -x);
 
-float  gm_acos(float x)  @trusted => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&core.stdc.math.acosf, x));
-double gm_acos(double x)  => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&core.stdc.math.acos, x));
-float  gm_acosh(float x)  => assumePureNothrowNogc(&core.stdc.math.acoshf, x);
-double gm_acosh(double x) => assumePureNothrowNogc(&core.stdc.math.acosh, x);
+float  gm_acos(float x)  @trusted => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acosf, x));
+double gm_acos(double x)  => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acos, x));
+float  gm_acosh(float x)  => assumePureNothrowNogc(&libc.acoshf, x);
+double gm_acosh(double x) => assumePureNothrowNogc(&libc.acosh, x);
 
 // TODO: angle_difference
 
-float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&core.stdc.math.asinf, x));
-double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&core.stdc.math.asin, x));
-float  gm_asinh(float x) => assumePureNothrowNogc(&core.stdc.math.asinhf, x);
-double gm_asinh(double x) => assumePureNothrowNogc(&core.stdc.math.asinh, x);
-float  gm_atan2(float y, float x) => assumePureNothrowNogc(&core.stdc.math.atan2f, y, x);
-double gm_atan2(double y, double x) => assumePureNothrowNogc(&core.stdc.math.atan2, y, x);
-float  gm_ceil(float x)  => core.stdc.math.ceilf(x);
-double gm_ceil(double x) => core.stdc.math.ceil(x);
-float  gm_cos(float x)  => core.stdc.math.cosf(x);
-double gm_cos(double x) => core.stdc.math.cos(x);
-float  gm_floor(float x)  => core.stdc.math.floorf(x);
-double gm_floor(double x) => core.stdc.math.floor(x);
-float gm_fmod(float x, float y) => assumePureNothrowNogc(&core.stdc.math.fmodf, x, y);
-double gm_fmod(double x, double y) => assumePureNothrowNogc(&core.stdc.math.fmod, x, y);
-float  gm_is_finite(float x)  => core.stdc.math.isfinite(x);
-double gm_is_finite(double x) => core.stdc.math.isfinite(x);
-float  gm_round(float x)  => core.stdc.math.roundf(x);
-double gm_round(double x) => core.stdc.math.round(x);
+float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asinf, x));
+double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asin, x));
+float  gm_asinh(float x) => assumePureNothrowNogc(&libc.asinhf, x);
+double gm_asinh(double x) => assumePureNothrowNogc(&libc.asinh, x);
+float  gm_atan2(float y, float x) => assumePureNothrowNogc(&libc.atan2f, y, x);
+double gm_atan2(double y, double x) => assumePureNothrowNogc(&libc.atan2, y, x);
+float  gm_ceil(float x)  => libc.ceilf(x);
+double gm_ceil(double x) => libc.ceil(x);
+float  gm_cos(float x)  => libc.cosf(x);
+double gm_cos(double x) => libc.cos(x);
+float  gm_floor(float x)  => libc.floorf(x);
+double gm_floor(double x) => libc.floor(x);
+float gm_fmod(float x, float y) => assumePureNothrowNogc(&libc.fmodf, x, y);
+double gm_fmod(double x, double y) => assumePureNothrowNogc(&libc.fmod, x, y);
+float  gm_is_finite(float x)  => libc.isfinite(x);
+double gm_is_finite(double x) => libc.isfinite(x);
+float  gm_round(float x)  => libc.roundf(x);
+double gm_round(double x) => libc.round(x);
+int    gm_sign(int v)    => (v > 0) ? 1 : (v < 0 ? -1 : 0);
 float  gm_sign(float v)  => (v > 0) ? 1.0f : (v < 0 ? -1.0f : 0.0f);
-double gm_sign(double v) =>(v > 0) ? 1.0 : (v < 0 ? -1.0 : 0.0);
-float  gm_sin(float x)  => core.stdc.math.sinf(x);
-double gm_sin(double x) => core.stdc.math.sin(x);
-float  gm_sqrt(float x)  => assumePureNothrowNogc(&core.stdc.math.sqrtf, x);
-double gm_sqrt(double x) => assumePureNothrowNogc(&core.stdc.math.sqrt, x);
+double gm_sign(double v) => (v > 0) ? 1.0 : (v < 0 ? -1.0 : 0.0);
+float  gm_sin(float x)   => libc.sinf(x);
+double gm_sin(double x)  => libc.sin(x);
+float  gm_sqrt(float x)  => assumePureNothrowNogc(&libc.sqrtf, x);
+double gm_sqrt(double x) => assumePureNothrowNogc(&libc.sqrt, x);
 
 
 
@@ -122,15 +123,21 @@ double gm_bezier_interpolate(double p_start, double p_control_1, double p_contro
     return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0 + p_control_2 * omt * t2 * 3.0 + p_end * t3;
 }
 
-
-float gm_clampf(float value, float min, float max)
+double gm_clamp(double value, double min, double max)
 {
     if (value < min) return min;
     if (value > max) return max;
     return value;
 }
 
-int gm_clampi(int value, int min, int max)
+float gm_clamp(float value, float min, float max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
+int gm_clamp(int value, int min, int max)
 {
     if (value < min) return min;
     if (value > max) return max;

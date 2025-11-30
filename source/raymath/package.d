@@ -139,7 +139,7 @@ Vector2 Vector2Invert(Vector2 v) => Vector2(1.0f / v.x, 1.0f / v.y);
 Vector2 Vector2Clamp(Vector2 v, Vector2 min, Vector2 max) => v.clamp(min, max);
 
 /// Clamp the magnitude of the vector between two min and max values
-Vector2 Vector2ClampValue(Vector2 v, float min, float max) => v.clampf(min, max);
+Vector2 Vector2ClampValue(Vector2 v, float min, float max) => v.clamp(min, max);
 
 /// Check whether two given vectors are almost equal
 int Vector2Equals(Vector2 p, Vector2 q) => p.is_equal_approx(q);
