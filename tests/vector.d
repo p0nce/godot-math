@@ -40,7 +40,7 @@ unittest
     cast(Vector4) cast(Vector4i) cast(Vector4d) Vector4.ONE;
 }
 
-@("Vector as arrays")
+@("Vector as static arrays")
 unittest 
 {
     Vector4i A, B;
@@ -52,6 +52,18 @@ unittest
 
     B.array = [7, 8, 9, 10];
     assert(B.array == [7, 8, 9, 10]);
+}
+
+@("Vector as slices")
+unittest
+{
+    Vector3i V;
+    int[] sl = V[];
+    sl = V[1..$];
+    sl[] = 2;
+    sl = V[1..2];
+    sl[0] = 4;
+    assert(V == Vector3i(0, 4, 2));
 }
 
 @("Vector arithmetics")
@@ -96,7 +108,7 @@ unittest
     assert(x == Vector4i(4, 1, 83, 10));
 }
 
-@("Octahedron encoding")
+@("Vector3 octahedron encoding")
 unittest
 {
     Vector3 up = Vector3.UP;

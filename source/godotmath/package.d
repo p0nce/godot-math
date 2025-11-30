@@ -247,6 +247,10 @@ pure nothrow @nogc @safe:
 
     // operators
     ref inout(T) opIndex(size_t n) inout return => array[n];
+    size_t opDollar() => 2;
+    inout(T)[] opSlice() inout return => array[];
+    inout(T)[] opSlice(size_t a, size_t b) inout return => array[a..b];
+
     inout(T)* ptr() inout return => array.ptr;
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y);
@@ -599,6 +603,10 @@ pure nothrow @nogc @safe:
  
     // operators
     ref inout(T) opIndex(size_t n) inout return => array[n];
+    size_t opDollar() => 3;
+    inout(T)[] opSlice() inout return => array[];
+    inout(T)[] opSlice(size_t a, size_t b) inout return => array[a..b];
+
     inout(T)* ptr() inout return => array.ptr;
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z);
@@ -826,6 +834,10 @@ pure nothrow @nogc @safe:
  
     // operators
     ref inout(T) opIndex(size_t n) inout return => array[n];
+    size_t opDollar() => 4;
+    inout(T)[] opSlice() inout return => array[];
+    inout(T)[] opSlice(size_t a, size_t b) inout return => array[a..b];
+
     inout(T)* ptr() inout return => array.ptr;
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z) && (w == v.w);
