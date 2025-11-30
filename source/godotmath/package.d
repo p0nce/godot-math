@@ -33,6 +33,20 @@ alias Vector4i = Vector4Impl!int;
 alias Basis    = BasisImpl!float;
 alias Basisd   = BasisImpl!double;
 
+
+// EulerOrder
+alias EulerOrder = int;
+enum : EulerOrder
+{
+    GM_EULER_ORDER_XYZ = 0,
+    GM_EULER_ORDER_XZY = 1,
+    GM_EULER_ORDER_YXZ = 2,
+    GM_EULER_ORDER_YZX = 3,
+    GM_EULER_ORDER_ZXY = 4,
+    GM_EULER_ORDER_ZYX = 5,
+}
+
+
 // TODO direction_to
 
 // Implementation done for: 
@@ -941,19 +955,289 @@ pure nothrow @nogc @safe:
                rows[2][0] * (rows[0][1] * rows[1][2] - rows[1][1] * rows[0][2]);
     }
 
-    static B from_euler(V3 euler, int order = EULER_ORDER_YXZ)
+    static B from_euler(V3 euler, EulerOrder order = GM_EULER_ORDER_YXZ)
     {
         B b;
         b.set_euler(euler, order);
         return b;
     }
 
-    // operators
-    V3 opIndex(size_t n) const => rows[n];
-    B opBinary(string op)(const B m) const if (op == "*")
-        => B(m.tdotx(rows[0]), m.tdoty(rows[0]), m.tdotz(rows[0]),
-             m.tdotx(rows[1]), m.tdoty(rows[1]), m.tdotz(rows[1]),
-             m.tdotx(rows[2]), m.tdoty(rows[2]), m.tdotz(rows[2]));
+    static B from_scale(const Vector3 scale)
+         => B(scale.x, 0, 0, 0, scale.y, 0, 0, 0, scale.z);
+
+
+    V3 get_euler(EulerOrder order = GM_EULER_ORDER_YXZ) const 
+    {
+        // This epsilon value results in angles within a +/- 0.04 degree range being simplified/truncated.
+        // Based on testing, this is the largest the epsilon can be without the angle truncation becoming
+        // visually noticeable.
+        const T epsilon = 0.00000025;
+
+        switch (order) 
+        {
+            case GM_EULER_ORDER_XYZ: 
+            {
+                // Euler angles in XYZ convention.
+                // See https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+                //
+                // rot =  cy*cz          -cy*sz           sy
+                //        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
+                //       -cx*cz*sy+sx*sz  cz*sx+cx*sy*sz  cx*cy
+
+                V3 euler;
+                T sy = rows[0][2];
+                if (sy < (1.0f - epsilon)) 
+                {
+                    if (sy > -(1.0f - epsilon)) 
+                    {
+                        // is this a pure Y rotation?
+                        if (rows[1][0] == 0 && rows[0][1] == 0 && rows[1][2] == 0 && rows[2][1] == 0 && rows[1][1] == 1) 
+                        {
+                            // return the simplest form (human friendlier in editor and scripts)
+                            euler.x = 0;
+                            euler.y = gm_atan2(rows[0][2], rows[0][0]);
+                            euler.z = 0;
+                        } 
+                        else 
+                        {
+                            euler.x = gm_atan2(-rows[1][2], rows[2][2]);
+                            euler.y = gm_asin(sy);
+                            euler.z = gm_atan2(-rows[0][1], rows[0][0]);
+                        }
+                    } 
+                    else 
+                    {
+                        euler.x = gm_atan2(rows[2][1], rows[1][1]);
+                        euler.y = -GM_PI / 2.0f;
+                        euler.z = 0.0f;
+                    }
+                } 
+                else 
+                {
+                    euler.x = gm_atan2(rows[2][1], rows[1][1]);
+                    euler.y = GM_PI / 2.0f;
+                    euler.z = 0.0f;
+                }
+                return euler;
+            }
+
+            case GM_EULER_ORDER_XZY: 
+            {
+                // Euler angles in XZY convention.
+                // See https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+                //
+                // rot =  cz*cy             -sz             cz*sy
+                //        sx*sy+cx*cy*sz    cx*cz           cx*sz*sy-cy*sx
+                //        cy*sx*sz          cz*sx           cx*cy+sx*sz*sy
+
+                V3 euler;
+                T sz = rows[0][1];
+                if (sz < (1.0f - epsilon)) 
+                {
+                    if (sz > -(1.0f - epsilon)) 
+                    {
+                        euler.x = gm_atan2(rows[2][1], rows[1][1]);
+                        euler.y = gm_atan2(rows[0][2], rows[0][0]);
+                        euler.z = gm_asin(-sz);
+                    } 
+                    else 
+                    {
+                        // It's -1
+                        euler.x = -gm_atan2(rows[1][2], rows[2][2]);
+                        euler.y = 0.0f;
+                        euler.z = GM_PI / 2.0f;
+                    }
+                } 
+                else 
+                {
+                    // It's 1
+                    euler.x = -gm_atan2(rows[1][2], rows[2][2]);
+                    euler.y = 0.0f;
+                    euler.z = -GM_PI / 2.0f;
+                }
+                return euler;
+            }
+
+            case GM_EULER_ORDER_YXZ: 
+            {
+                // Euler angles in YXZ convention.
+                // See https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+                //
+                // rot =  cy*cz+sy*sx*sz    cz*sy*sx-cy*sz        cx*sy
+                //        cx*sz             cx*cz                 -sx
+                //        cy*sx*sz-cz*sy    cy*cz*sx+sy*sz        cy*cx
+
+                V3 euler;
+
+                T m12 = rows[1][2];
+
+                if (m12 < (1 - epsilon)) 
+                {
+                    if (m12 > -(1 - epsilon)) 
+                    {
+                        // is this a pure X rotation?
+                        if (rows[1][0] == 0 && rows[0][1] == 0 && rows[0][2] == 0 && rows[2][0] == 0 && rows[0][0] == 1) {
+                            // return the simplest form (human friendlier in editor and scripts)
+                            euler.x = gm_atan2(-m12, rows[1][1]);
+                            euler.y = 0;
+                            euler.z = 0;
+                        } 
+                        else 
+                        {
+                            euler.x = gm_asin(-m12);
+                            euler.y = gm_atan2(rows[0][2], rows[2][2]);
+                            euler.z = gm_atan2(rows[1][0], rows[1][1]);
+                        }
+                    } 
+                    else 
+                    { // m12 == -1
+                        euler.x = GM_PI * 0.5f;
+                        euler.y = gm_atan2(rows[0][1], rows[0][0]);
+                        euler.z = 0;
+                    }
+                } 
+                else 
+                { // m12 == 1
+                    euler.x = -GM_PI * 0.5f;
+                    euler.y = -gm_atan2(rows[0][1], rows[0][0]);
+                    euler.z = 0;
+                }
+
+                return euler;
+            }
+
+            case GM_EULER_ORDER_YZX: 
+            {
+                // Euler angles in YZX convention.
+                // See https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+                //
+                // rot =  cy*cz             sy*sx-cy*cx*sz     cx*sy+cy*sz*sx
+                //        sz                cz*cx              -cz*sx
+                //        -cz*sy            cy*sx+cx*sy*sz     cy*cx-sy*sz*sx
+
+                V3 euler;
+                T sz = rows[1][0];
+                if (sz < (1.0f - epsilon)) 
+                {
+                    if (sz > -(1.0f - epsilon)) 
+                    {
+                        euler.x = gm_atan2(-rows[1][2], rows[1][1]);
+                        euler.y = gm_atan2(-rows[2][0], rows[0][0]);
+                        euler.z = gm_asin(sz);
+                    } 
+                    else 
+                    {
+                        // It's -1
+                        euler.x = gm_atan2(rows[2][1], rows[2][2]);
+                        euler.y = 0.0f;
+                        euler.z = -GM_PI / 2.0f;
+                    }
+                } 
+                else 
+                {
+                    // It's 1
+                    euler.x = gm_atan2(rows[2][1], rows[2][2]);
+                    euler.y = 0.0f;
+                    euler.z = GM_PI / 2.0f;
+                }
+                return euler;
+            } 
+
+            case GM_EULER_ORDER_ZXY: 
+            {
+                // Euler angles in ZXY convention.
+                // See https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+                //
+                // rot =  cz*cy-sz*sx*sy    -cx*sz                cz*sy+cy*sz*sx
+                //        cy*sz+cz*sx*sy    cz*cx                 sz*sy-cz*cy*sx
+                //        -cx*sy            sx                    cx*cy
+                V3 euler;
+                T sx = rows[2][1];
+                if (sx < (1.0f - epsilon)) 
+                {
+                    if (sx > -(1.0f - epsilon)) 
+                    {
+                        euler.x = gm_asin(sx);
+                        euler.y = gm_atan2(-rows[2][0], rows[2][2]);
+                        euler.z = gm_atan2(-rows[0][1], rows[1][1]);
+                    } else 
+                    {
+                        // It's -1
+                        euler.x = -GM_PI / 2.0f;
+                        euler.y = gm_atan2(rows[0][2], rows[0][0]);
+                        euler.z = 0;
+                    }
+                } 
+                else 
+                {
+                    // It's 1
+                    euler.x = GM_PI / 2.0f;
+                    euler.y = gm_atan2(rows[0][2], rows[0][0]);
+                    euler.z = 0;
+                }
+                return euler;
+            }
+
+            case GM_EULER_ORDER_ZYX: 
+            {
+                // Euler angles in ZYX convention.
+                // See https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+                //
+                // rot =  cz*cy             cz*sy*sx-cx*sz        sz*sx+cz*cx*cy
+                //        cy*sz             cz*cx+sz*sy*sx        cx*sz*sy-cz*sx
+                //        -sy               cy*sx                 cy*cx
+                V3 euler;
+                T sy = rows[2][0];
+                if (sy < (1.0f - epsilon)) 
+                {
+                    if (sy > -(1.0f - epsilon)) 
+                    {
+                        euler.x = gm_atan2(rows[2][1], rows[2][2]);
+                        euler.y = gm_asin(-sy);
+                        euler.z = gm_atan2(rows[1][0], rows[0][0]);
+                    } 
+                    else 
+                    {
+                        // It's -1
+                        euler.x = 0;
+                        euler.y = GM_PI / 2.0f;
+                        euler.z = -gm_atan2(rows[0][1], rows[1][1]);
+                    }
+                } 
+                else 
+                {
+                    // It's 1
+                    euler.x = 0;
+                    euler.y = -GM_PI / 2.0f;
+                    euler.z = -gm_atan2(rows[0][1], rows[1][1]);
+                }
+                return euler;
+        }
+
+        default:
+            assert(0); // bad Euler order
+        }
+
+        //return V.init;
+    }
+
+/+
+Vector3 get_euler(order: int = 2) const
+
+Quaternion get_rotation_quaternion() const
+Vector3 get_scale() const
+Basis inverse() const
+
+bool is_conformal() const
+bool is_equal_approx(b: Basis) const
+bool is_finite() const
+static looking_at(target: Vector3, up: Vector3 = Vector3(0, 1, 0), use_model_front: bool = false) static
+orthonormalized() const
+rotated(axis: Vector3, angle: float) const
+scaled(scale: Vector3) const
+scaled_local(scale: Vector3) const
+slerp(to: Basis, weight: float) const
++/
 
     void set_axis_angle(const V3 axis, T angle)
     {
@@ -1002,12 +1286,12 @@ pure nothrow @nogc @safe:
 
         switch (order) 
         {
-            case EULER_ORDER_XYZ: this = xmat * ymat * zmat; break;
-            case EULER_ORDER_XZY: this = xmat * zmat * ymat; break;
-            case EULER_ORDER_YXZ: this = ymat * xmat * zmat; break;
-            case EULER_ORDER_YZX: this = ymat * zmat * xmat; break;
-            case EULER_ORDER_ZXY: this = zmat * xmat * ymat; break;
-            case EULER_ORDER_ZYX: this = zmat * ymat * xmat; break;
+            case GM_EULER_ORDER_XYZ: this = xmat * ymat * zmat; break;
+            case GM_EULER_ORDER_XZY: this = xmat * zmat * ymat; break;
+            case GM_EULER_ORDER_YXZ: this = ymat * xmat * zmat; break;
+            case GM_EULER_ORDER_YZX: this = ymat * zmat * xmat; break;
+            case GM_EULER_ORDER_ZXY: this = zmat * xmat * ymat; break;
+            case GM_EULER_ORDER_ZYX: this = zmat * ymat * xmat; break;
             default: 
                 assert(false);
         }
@@ -1022,22 +1306,19 @@ pure nothrow @nogc @safe:
 
 	T tdotz(const V3 v) const =>
 		rows[0][2] * v[0] + rows[1][2] * v[1] + rows[2][2] * v[2];
+
+    /+ transposed() const +/
+
+    // operators
+    V3 opIndex(size_t n) const => rows[n];
+    B opBinary(string op)(const B m) const if (op == "*")
+        => B(m.tdotx(rows[0]), m.tdoty(rows[0]), m.tdotz(rows[0]),
+             m.tdotx(rows[1]), m.tdoty(rows[1]), m.tdotz(rows[1]),
+             m.tdotx(rows[2]), m.tdoty(rows[2]), m.tdotz(rows[2]));
 }
 
 
 
-
-// EulerOrder
-alias EulerOrder = int;
-enum : EulerOrder
-{
-    EULER_ORDER_XYZ = 0,
-    EULER_ORDER_XZY = 1,
-    EULER_ORDER_YXZ = 2,
-    EULER_ORDER_YZX = 3,
-    EULER_ORDER_ZXY = 4,
-    EULER_ORDER_ZYX = 5,
-}
 
 
 

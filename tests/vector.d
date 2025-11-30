@@ -32,6 +32,31 @@ unittest
     assert(cast(Vector2d)a2 != Vector2d.ZERO);
 }
 
+    
+// More tests from GFM
+
+/*
+    assert(Vector2i(4, 5) + 1 == Vector2i(5,6));
+    assert(Vector2i(4, 5) - 1 == Vector2i(3,4));
+    assert(1 + Vector2i(4, 5) == Vector2i(5,6));
+    assert(Vector3(1,1,1) * 0 == 0);
+    assert(1.0 * Vector3d(4,5,6) == Vector3(4,5.0f,6.0));
+
+    auto dx = Vector2i(1,2);
+    auto dy = Vector2i(4,5);
+    auto dp = dx.dot(dy);
+    assert(dp == 14 );
+
+    Vector3i h = cast(Vector3i)(Vector3d(0.5, 1.1, -2.2));
+    assert(h == [0, 1, -2]);
+
+    //assert(h[] == [0, 1, -2]);
+    //assert(h[1..3] == [1, -2]);
+    assert(-h[1] == -5);
+    assert(++h[0] == 3);
+    assert(Vector3i(-1, 0, 2).abs == Vector3i(1, 0, 2));*/
+
+
 @("Vector casts")
 unittest 
 {
@@ -130,26 +155,5 @@ unittest
 
 
 
-    
-    
-/*
-    assert(Vector2i(4, 5) + 1 == Vector2i(5,6));
-    assert(Vector2i(4, 5) - 1 == Vector2i(3,4));
-    assert(1 + Vector2i(4, 5) == Vector2i(5,6));
-    assert(Vector3(1,1,1) * 0 == 0);
-    assert(1.0 * Vector3d(4,5,6) == Vector3(4,5.0f,6.0));
 
-    auto dx = Vector2i(1,2);
-    auto dy = Vector2i(4,5);
-    auto dp = dx.dot(dy);
-    assert(dp == 14 );
-
-    Vector3i h = cast(Vector3i)(Vector3d(0.5, 1.1, -2.2));
-    assert(h == [0, 1, -2]);
-
-    //assert(h[] == [0, 1, -2]);
-    //assert(h[1..3] == [1, -2]);
-    assert(-h[1] == -5);
-    assert(++h[0] == 3);
-    assert(vec3i(-1, 0, 2).abs == vec3i(1, 0, 2));*/
 
