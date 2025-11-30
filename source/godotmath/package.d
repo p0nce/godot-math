@@ -48,6 +48,7 @@ enum : EulerOrder
 
 
 // TODO direction_to
+// TODO: opBinaryRight
 
 // Implementation done for: 
 // - Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html
@@ -1221,11 +1222,45 @@ pure nothrow @nogc @safe:
         //return V.init;
     }
 
-/+
-Vector3 get_euler(order: int = 2) const
 
-Quaternion get_rotation_quaternion() const
-Vector3 get_scale() const
+// TODO Quaternion get_rotation_quaternion() const
+
+
+    // get_scale works with get_rotation, use get_scale_abs if you need to enforce positive signature.
+    V3 get_scale() const 
+    {
+        // FIXME: We are assuming M = R.S (R is rotation and S is scaling), and use polar decomposition to extract R and S.
+        // A polar decomposition is M = O.P, where O is an orthogonal matrix (meaning rotation and reflection) and
+        // P is a positive semi-definite matrix (meaning it contains absolute values of scaling along its diagonal).
+        //
+        // Despite being different from what we want to achieve, we can nevertheless make use of polar decomposition
+        // here as follows. We can split O into a rotation and a reflection as O = R.Q, and obtain M = R.S where
+        // we defined S = Q.P. Now, R is a proper rotation matrix and S is a (signed) scaling matrix,
+        // which can involve negative scalings. However, there is a catch: unlike the polar decomposition of M = O.P,
+        // the decomposition of O into a rotation and reflection matrix as O = R.Q is not unique.
+        // Therefore, we are going to do this decomposition by sticking to a particular convention.
+        // This may lead to confusion for some users though.
+        //
+        // The convention we use here is to absorb the sign flip into the scaling matrix.
+        // The same convention is also used in other similar functions such as get_rotation_axis_angle, get_rotation, ...
+        //
+        // A proper way to get rid of this issue would be to store the scaling values (or at least their signs)
+        // as a part of Basis. However, if we go that path, we need to disable direct (write) access to the
+        // matrix elements.
+        //
+        // The rotation part of this decomposition is returned by get_rotation* functions.
+        T det_sign = gm_sign(determinant());
+        return get_scale_abs() * det_sign;
+    }
+
+    private V3 get_scale_abs() const 
+    {
+        return V3( V3(rows[0][0], rows[1][0], rows[2][0]).length(),
+                   V3(rows[0][1], rows[1][1], rows[2][1]).length(),
+                   V3(rows[0][2], rows[1][2], rows[2][2]).length() );
+    }
+
+/+
 Basis inverse() const
 
 bool is_conformal() const
@@ -1233,7 +1268,11 @@ bool is_equal_approx(b: Basis) const
 bool is_finite() const
 static looking_at(target: Vector3, up: Vector3 = Vector3(0, 1, 0), use_model_front: bool = false) static
 orthonormalized() const
-rotated(axis: Vector3, angle: float) const
++/
+    void rotate(const V3 axis, T p_angle) { this = rotated(axis, p_angle); }
+    B rotated(const V3 axis, T angle) const => B(axis, angle) * this;
+    
+/+
 scaled(scale: Vector3) const
 scaled_local(scale: Vector3) const
 slerp(to: Basis, weight: float) const
