@@ -40,50 +40,22 @@ enum double GM_CMP_EPSILON2 = (GM_CMP_EPSILON * GM_CMP_EPSILON);
 // PRECISE_MATH_CHECKS
 enum GM_UNIT_EPSILON = 0.00001;
 
-
-float gm_abs(float x) => libc.fabsf(x);
-double gm_abs(double x) => libc.fabs(x);
-int gm_abs(int x) => (x >= 0 ? x : -x);
-
-float  gm_acos(float x)  @trusted => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acosf, x));
-double gm_acos(double x)  => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acos, x));
-float  gm_acosh(float x)  => assumePureNothrowNogc(&libc.acoshf, x);
-double gm_acosh(double x) => assumePureNothrowNogc(&libc.acosh, x);
-
-// TODO: angle_difference
-
-float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asinf, x));
-double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asin, x));
-float  gm_asinh(float x) => assumePureNothrowNogc(&libc.asinhf, x);
-double gm_asinh(double x) => assumePureNothrowNogc(&libc.asinh, x);
-float  gm_atan2(float y, float x) => assumePureNothrowNogc(&libc.atan2f, y, x);
-double gm_atan2(double y, double x) => assumePureNothrowNogc(&libc.atan2, y, x);
-float  gm_ceil(float x)  => libc.ceilf(x);
-double gm_ceil(double x) => libc.ceil(x);
-float  gm_cos(float x)  => libc.cosf(x);
-double gm_cos(double x) => libc.cos(x);
-float  gm_floor(float x)  => libc.floorf(x);
-double gm_floor(double x) => libc.floor(x);
-float gm_fmod(float x, float y) => assumePureNothrowNogc(&libc.fmodf, x, y);
-double gm_fmod(double x, double y) => assumePureNothrowNogc(&libc.fmod, x, y);
-float  gm_is_finite(float x)  => libc.isfinite(x);
-double gm_is_finite(double x) => libc.isfinite(x);
-float  gm_round(float x)  => libc.roundf(x);
-double gm_round(double x) => libc.round(x);
-int    gm_sign(int v)    => (v > 0) ? 1 : (v < 0 ? -1 : 0);
-float  gm_sign(float v)  => (v > 0) ? 1.0f : (v < 0 ? -1.0f : 0.0f);
-double gm_sign(double v) => (v > 0) ? 1.0 : (v < 0 ? -1.0 : 0.0);
-float  gm_sin(float x)   => libc.sinf(x);
-double gm_sin(double x)  => libc.sin(x);
-float  gm_sqrt(float x)  => assumePureNothrowNogc(&libc.sqrtf, x);
-double gm_sqrt(double x) => assumePureNothrowNogc(&libc.sqrt, x);
-
-
-
-
+float gm_abs(float x) => libc.fabsf(x); ///
+double gm_abs(double x) => libc.fabs(x); ///
+int gm_abs(int x) => (x >= 0 ? x : -x); ///
+float  gm_acos(float x)  @trusted => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acosf, x)); ///
+double gm_acos(double x)  => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acos, x)); ///
+float  gm_acosh(float x)  => assumePureNothrowNogc(&libc.acoshf, x); ///
+double gm_acosh(double x) => assumePureNothrowNogc(&libc.acosh, x); ///
+float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asinf, x)); ///
+double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asin, x)); ///
+float  gm_asinh(float x) => assumePureNothrowNogc(&libc.asinhf, x); ///
+double gm_asinh(double x) => assumePureNothrowNogc(&libc.asinh, x); ///
+float  gm_atan2(float y, float x) => assumePureNothrowNogc(&libc.atan2f, y, x); ///
+double gm_atan2(double y, double x) => assumePureNothrowNogc(&libc.atan2, y, x); ///
 
 float gm_bezier_derivative(float p_start, float p_control_1, 
-                           float p_control_2, float p_end, float p_t) 
+                           float p_control_2, float p_end, float p_t) ///
 {
     float omt = (1.0f - p_t);
     float omt2 = omt * omt;
@@ -93,7 +65,7 @@ float gm_bezier_derivative(float p_start, float p_control_1,
 }
 
 double gm_bezier_derivative(double p_start, double p_control_1, 
-                            double p_control_2, double p_end, double p_t) 
+                            double p_control_2, double p_end, double p_t) /// 
 {
     double omt = (1.0 - p_t);
     double omt2 = omt * omt;
@@ -103,7 +75,7 @@ double gm_bezier_derivative(double p_start, double p_control_1,
     return d;
 }
 
-float gm_bezier_interpolate(float p_start, float p_control_1, float p_control_2, float p_end, float p_t) 
+float gm_bezier_interpolate(float p_start, float p_control_1, float p_control_2, float p_end, float p_t) ///
 {
     float omt = (1.0f - p_t);
     float omt2 = omt * omt;
@@ -113,7 +85,7 @@ float gm_bezier_interpolate(float p_start, float p_control_1, float p_control_2,
     return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0f + p_control_2 * omt * t2 * 3.0f + p_end * t3;
 }
 
-double gm_bezier_interpolate(double p_start, double p_control_1, double p_control_2, double p_end, double p_t) 
+double gm_bezier_interpolate(double p_start, double p_control_1, double p_control_2, double p_end, double p_t) ///
 {
     double omt = (1.0 - p_t);
     double omt2 = omt * omt;
@@ -123,29 +95,34 @@ double gm_bezier_interpolate(double p_start, double p_control_1, double p_contro
     return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0 + p_control_2 * omt * t2 * 3.0 + p_end * t3;
 }
 
-double gm_clamp(double value, double min, double max)
+float  gm_ceil(float x)  => libc.ceilf(x); ///
+double gm_ceil(double x) => libc.ceil(x); ///
+
+double gm_clamp(double value, double min, double max) ///
 {
     if (value < min) return min;
     if (value > max) return max;
     return value;
 }
 
-float gm_clamp(float value, float min, float max)
+float gm_clamp(float value, float min, float max) ///
 {
     if (value < min) return min;
     if (value > max) return max;
     return value;
 }
 
-int gm_clamp(int value, int min, int max)
+int gm_clamp(int value, int min, int max) ///
 {
     if (value < min) return min;
     if (value > max) return max;
     return value;
 }
 
+float  gm_cos(float x)  => libc.cosf(x); ///
+double gm_cos(double x) => libc.cos(x); ///
 
-double gm_cubic_interpolate(double p_from, double p_to, double p_pre, double p_post, double p_weight) 
+double gm_cubic_interpolate(double p_from, double p_to, double p_pre, double p_post, double p_weight) ///
 {
     return 0.5 *
         ((p_from * 2.0) +
@@ -154,7 +131,7 @@ double gm_cubic_interpolate(double p_from, double p_to, double p_pre, double p_p
          (-p_pre + 3.0 * p_from - 3.0 * p_to + p_post) * (p_weight * p_weight * p_weight));
 }
 
-float gm_cubic_interpolate(float p_from, float p_to, float p_pre, float p_post, float p_weight) 
+float gm_cubic_interpolate(float p_from, float p_to, float p_pre, float p_post, float p_weight) ///
 {
     return 0.5f *
         ((p_from * 2.0f) +
@@ -164,7 +141,7 @@ float gm_cubic_interpolate(float p_from, float p_to, float p_pre, float p_post, 
 }
 
 double gm_cubic_interpolate_in_time(double p_from, double p_to, double p_pre, double p_post, double p_weight,
-                                    double p_to_t, double p_pre_t, double p_post_t) 
+                                    double p_to_t, double p_pre_t, double p_post_t) ///
 {
     /* Barry-Goldman method */
     double t = gm_lerp(0.0, p_to_t, p_weight);
@@ -176,7 +153,7 @@ double gm_cubic_interpolate_in_time(double p_from, double p_to, double p_pre, do
     return gm_lerp(b1, b2, p_to_t == 0 ? 0.5 : t / p_to_t);
 }
 float gm_cubic_interpolate_in_time(float p_from, float p_to, float p_pre, float p_post, float p_weight,
-                                   float p_to_t, float p_pre_t, float p_post_t) 
+                                   float p_to_t, float p_pre_t, float p_post_t) ///
 {
     /* Barry-Goldman method */
     float t = gm_lerp(0.0f, p_to_t, p_weight);
@@ -188,9 +165,12 @@ float gm_cubic_interpolate_in_time(float p_from, float p_to, float p_pre, float 
     return gm_lerp(b1, b2, p_to_t == 0 ? 0.5f : t / p_to_t);
 }
 
+float  gm_floor(float x)  => libc.floorf(x); ///
+double gm_floor(double x) => libc.floor(x); ///
+float gm_fmod(float x, float y) => assumePureNothrowNogc(&libc.fmodf, x, y); ///
+double gm_fmod(double x, double y) => assumePureNothrowNogc(&libc.fmod, x, y); ///
 
-
-double gm_fposmod(double x, double y) 
+double gm_fposmod(double x, double y) ///
 {
     double value = gm_fmod(x, y);
     if (((value < 0) && (y > 0)) || ((value > 0) && (y < 0))) 
@@ -201,7 +181,7 @@ double gm_fposmod(double x, double y)
     return value;
 }
 
-float gm_fposmod(float x, float y) 
+float gm_fposmod(float x, float y) ///
 {
     float value = gm_fmod(x, y);
     if (((value < 0) && (y > 0)) || ((value > 0) && (y < 0))) 
@@ -212,7 +192,7 @@ float gm_fposmod(float x, float y)
     return value;
 }
 
-bool gm_is_equal_approx(float p_left, float p_right) 
+bool gm_is_equal_approx(float p_left, float p_right) ///
 {
     // Check for exact equality first, required to handle "infinity" values.
     if (p_left == p_right) {
@@ -227,7 +207,7 @@ bool gm_is_equal_approx(float p_left, float p_right)
     return gm_abs(p_left - p_right) < tolerance;
 }
 
-bool gm_is_equal_approx(double p_left, double p_right) 
+bool gm_is_equal_approx(double p_left, double p_right) ///
 {
     // Check for exact equality first, required to handle "infinity" values.
     if (p_left == p_right) 
@@ -243,7 +223,7 @@ bool gm_is_equal_approx(double p_left, double p_right)
     return gm_abs(p_left - p_right) < tolerance;
 }
 
-bool gm_is_equal_approx(float p_left, float p_right, float p_tolerance) 
+bool gm_is_equal_approx(float p_left, float p_right, float p_tolerance) /// 
 {
     // Check for exact equality first, required to handle "infinity" values.
     if (p_left == p_right)
@@ -253,7 +233,7 @@ bool gm_is_equal_approx(float p_left, float p_right, float p_tolerance)
     return gm_abs(p_left - p_right) < p_tolerance;
 }
 
-bool gm_is_equal_approx(double p_left, double p_right, double p_tolerance) 
+bool gm_is_equal_approx(double p_left, double p_right, double p_tolerance) ///
 {
     // Check for exact equality first, required to handle "infinity" values.
     if (p_left == p_right) 
@@ -264,22 +244,32 @@ bool gm_is_equal_approx(double p_left, double p_right, double p_tolerance)
     return gm_abs(p_left - p_right) < p_tolerance;
 }
 
+float  gm_is_finite(float x)  => libc.isfinite(x); ///
+double gm_is_finite(double x) => libc.isfinite(x); ///
 
 bool gm_is_zero_approx(float  value) => gm_abs(value) < cast(float)GM_CMP_EPSILON;
 bool gm_is_zero_approx(double value) => gm_abs(value) < GM_CMP_EPSILON;
-
 
 float gm_lerp(float from, float to, float weight) 
 {
     return from + (to - from) * weight;
 }
 
-double gm_lerp(double from, double to, double weight) 
+double gm_lerp(double from, double to, double weight) ///
 {
     return from + (to - from) * weight;
 }
 
-double gm_snapped(double value, double step) 
+float  gm_round(float x)  => libc.roundf(x); ///
+double gm_round(double x) => libc.round(x); ///
+
+int    gm_sign(int v)    => (v > 0) ? 1 : (v < 0 ? -1 : 0); ///
+float  gm_sign(float v)  => (v > 0) ? 1.0f : (v < 0 ? -1.0f : 0.0f); ///
+double gm_sign(double v) => (v > 0) ? 1.0 : (v < 0 ? -1.0 : 0.0); ///
+float  gm_sin(float x)   => libc.sinf(x); ///
+double gm_sin(double x)  => libc.sin(x); ///
+
+double gm_snapped(double value, double step) ///
 {
     // BUG: floor(x + 0.5) not exactly the same as round
     // will hardly be met in practice
@@ -290,12 +280,15 @@ double gm_snapped(double value, double step)
 	return value;
 }
 
-int gm_snapped(int value, int step) 
+int gm_snapped(int value, int step) ///
 {
     // Strangely enough, Godot doesn't do anything special for integers,
     // it doesn't use a correct integer rounding.
     return cast(int) gm_snapped(value, step);
 }
+
+float  gm_sqrt(float x)  => assumePureNothrowNogc(&libc.sqrtf, x); ///
+double gm_sqrt(double x) => assumePureNothrowNogc(&libc.sqrt, x); ///
 
 private:
 
