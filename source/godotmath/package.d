@@ -49,12 +49,15 @@ enum : EulerOrder
 
 // TODO direction_to
 // TODO: opBinaryRight
+// TODO: basis casting
 
 // Implementation done for: 
 // - Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html
 // - Vector3 => https://docs.godotengine.org/en/stable/classes/class_vector3.html
+// - Vector4 => https://docs.godotengine.org/en/stable/classes/class_vector3.html
 // - Vector2i => https://docs.godotengine.org/en/stable/classes/class_vector2i.html
 // - Vector3i => https://docs.godotengine.org/en/stable/classes/class_vector3i.html
+// - Vector4i => https://docs.godotengine.org/en/stable/classes/class_vector4i.html
 //
 // Note: In case of semantic conflict, the way Godot does it is favoured.
 
