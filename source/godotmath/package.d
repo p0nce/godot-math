@@ -62,15 +62,24 @@ pure nothrow @nogc @safe:
         alias V = Vector2Impl!T;
         enum bool isInt = is(T == int);
         enum bool isFloat = isFloatingPoint!T;
-        static if (isFloat)        
+        static if (isFloat)
             alias F = T;
         else 
             alias F = float;
         alias Elem = T;
     }
-    
-    union { T x = 0; T width;  }
-    union { T y = 0; T height; }
+
+    union
+    {
+        struct
+        {
+            T x = 0;
+            T y = 0;
+            alias width = x;
+            alias height = y;
+        }
+        T[2] array;
+    }
 
     enum : int
     {
@@ -237,7 +246,8 @@ pure nothrow @nogc @safe:
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step));
 
     // operators
-    ref inout(T) opIndex(size_t n) inout return { assert(n < 2); return n ? y : x; }
+    ref inout(T) opIndex(size_t n) inout return => array[n];
+    inout(T)* ptr() inout return => array.ptr;
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y);
 
@@ -316,9 +326,19 @@ pure nothrow @nogc @safe:
         alias Elem = T;
     }
 
-    union { T x = 0; T width;  }
-    union { T y = 0; T height; }
-    union { T z = 0; T depth;  }
+    union
+    {
+        struct
+        {
+            T x = 0;
+            T y = 0;
+            T z = 0;
+            alias width  = x;
+            alias height = y;
+            alias depth  = z;
+        }
+        T[3] array;
+    }
 
     enum : int
     {
@@ -578,7 +598,8 @@ pure nothrow @nogc @safe:
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step));
  
     // operators
-    ref inout(T) opIndex(size_t n) inout return { assert(n < 3); switch (n) { case 0: return x; case 1: return y; default: return z; } }
+    ref inout(T) opIndex(size_t n) inout return => array[n];
+    inout(T)* ptr() inout return => array.ptr;
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z);
 
@@ -656,10 +677,20 @@ pure nothrow @nogc @safe:
         alias Elem = T;
     }
 
-    union { T x = 0; T width;  }
-    union { T y = 0; T height; }
-    union { T z = 0; T depth;  }
-    union { T w = 0; }
+    union
+    {
+        struct
+        {
+            T x = 0;
+            T y = 0;
+            T z = 0;
+            T w = 0;
+            alias width  = x;
+            alias height = y;
+            alias depth  = z;
+        }
+        T[4] array;
+    }
 
     enum : int
     {
@@ -794,17 +825,8 @@ pure nothrow @nogc @safe:
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step), gm_snapped(w, step));
  
     // operators
-    ref inout(T) opIndex(size_t n) inout return 
-    { 
-        assert(n < 4); 
-        switch (n) 
-        { 
-            case 0: return x; 
-            case 1: return y; 
-            case 2: return z; 
-            default: return w; 
-        } 
-    }
+    ref inout(T) opIndex(size_t n) inout return => array[n];
+    inout(T)* ptr() inout return => array.ptr;
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z) && (w == v.w);
 

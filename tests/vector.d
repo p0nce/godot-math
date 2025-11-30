@@ -2,6 +2,8 @@ module vector;
 
 import godotmath;
 
+pure nothrow @nogc @safe:
+
 @("Vector basics")
 unittest 
 {
@@ -36,6 +38,20 @@ unittest
     cast(Vector2) cast(Vector2i) cast(Vector2d) Vector2.ONE;
     cast(Vector3) cast(Vector3i) cast(Vector3d) Vector3.ONE;
     cast(Vector4) cast(Vector4i) cast(Vector4d) Vector4.ONE;
+}
+
+@("Vector as arrays")
+unittest 
+{
+    Vector4i A, B;
+    assert(A == Vector4i.ZERO);
+
+    A.array[2] = 42;
+    *A.ptr = 1 + A[2];
+    assert(A == Vector4i(43, 0, 42, 0));
+
+    B.array = [7, 8, 9, 10];
+    assert(B.array == [7, 8, 9, 10]);
 }
 
 @("Vector arithmetics")
