@@ -47,9 +47,7 @@ enum : EulerOrder
 }
 
 
-// TODO direction_to
 // TODO: opBinaryRight
-// TODO: basis casting
 
 // Implementation done for: 
 // - Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html
@@ -263,6 +261,9 @@ pure nothrow @nogc @safe:
     V snapped(const V step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y));
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step));
 
+    V withX(T newX) const => V(newX, y);
+    V withY(T newY) const => V(x, newY);
+
     // operators
     ref inout(T) opIndex(size_t n) inout return => array[n];
     size_t opDollar() => 2;
@@ -294,7 +295,13 @@ pure nothrow @nogc @safe:
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale);
     V opBinary(string op)(const V v) const if (op == "%") => V(x % v.x  , y % v.y  );
-    V opBinary(string op)(T scale)   const if (op == "%") => V(x % scale, y % scale);
+    V opBinary(string op)(T mod)     const if (op == "%") => V(x % mod  , y % mod  );
+
+    V opBinaryRight(string op)(T scale) const if (op == "*") => V(scale * x, scale * y);
+    V opBinaryRight(string op)(T add)   const if (op == "+") => V(add + x  , add + y  );
+    V opBinaryRight(string op)(T sub)   const if (op == "-") => V(sub - x  , sub - y  );
+    V opBinaryRight(string op)(T scale) const if (op == "/") => V(scale / x, scale / y);
+    V opBinaryRight(string op)(T mod)   const if (op == "%") => V(mod % x  , mod % y  );
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; return this; }
@@ -305,7 +312,7 @@ pure nothrow @nogc @safe:
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; return this; }
     V opOpAssign(string op)(const V v) if (op == "%") { x %= v.x;   y %= v.y;   return this; }
-    V opOpAssign(string op)(T scale)   if (op == "%") { x %= scale; y %= scale; return this; }
+    V opOpAssign(string op)(T mod)     if (op == "%") { x %= mod;   y %= mod;   return this; }
     
     V opUnary(string op)() const if (op == "+") => this;    
     V opUnary(string op)() const if (op == "-") => V(-x, -y);
@@ -618,7 +625,11 @@ pure nothrow @nogc @safe:
 
     V snapped(const(V) step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y),  gm_snapped(z, step.z));
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step));
- 
+
+    V withX(T newX) const => V(newX, y, z);
+    V withY(T newY) const => V(x, newY, z);
+    V withZ(T newZ) const => V(x, y, newZ);
+
     // operators
     ref inout(T) opIndex(size_t n) inout return => array[n];
     size_t opDollar() => 3;
@@ -650,7 +661,13 @@ pure nothrow @nogc @safe:
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  , z / v.z  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale, z / scale);
     V opBinary(string op)(const V v) const if (op == "%") => V(x % v.x  , y % v.y  , z % v.z  );
-    V opBinary(string op)(T scale)   const if (op == "%") => V(x % scale, y % scale, z % scale);
+    V opBinary(string op)(T mod)     const if (op == "%") => V(x % mod  , y % mod  , z % mod  );
+
+    V opBinaryRight(string op)(T scale) const if (op == "*") => V(scale * x, scale * y, scale * z);
+    V opBinaryRight(string op)(T add)   const if (op == "+") => V(add + x  , add + y  , add + z  );
+    V opBinaryRight(string op)(T sub)   const if (op == "-") => V(sub - x  , sub - y  , sub - z  );
+    V opBinaryRight(string op)(T scale) const if (op == "/") => V(scale / x, scale / y, scale / z);
+    V opBinaryRight(string op)(T mod)   const if (op == "%") => V(mod % x  , mod % y  , mod % z  );
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
@@ -661,7 +678,7 @@ pure nothrow @nogc @safe:
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   z /= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; z /= scale; return this; }
     V opOpAssign(string op)(const V v) if (op == "%") { x %= v.x;   y %= v.y;   z %= v.z;   return this; }
-    V opOpAssign(string op)(T scale)   if (op == "%") { x %= scale; y %= scale; z %= scale; return this; }
+    V opOpAssign(string op)(T mod)     if (op == "%") { x %= mod;   y %= mod;   z %= mod;   return this; }
     
     V opUnary(string op)() const if (op == "+") => this;
     V opUnary(string op)() const if (op == "-") => V(-x, -y, -z);
@@ -849,6 +866,11 @@ pure nothrow @nogc @safe:
 
     V snapped(const(V) step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y), gm_snapped(z, step.z), gm_snapped(w, step.w));
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step), gm_snapped(w, step));
+
+    V withX(T newX) const => V(newX, y, z, w);
+    V withY(T newY) const => V(x, newY, z, w);
+    V withZ(T newZ) const => V(x, y, newZ, w);
+    V withW(T newW) const => V(x, y, z, newW);
  
     // operators
     ref inout(T) opIndex(size_t n) inout return => array[n];
@@ -881,7 +903,13 @@ pure nothrow @nogc @safe:
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  , z / v.z  , w / v.w  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale, z / scale, w / scale);
     V opBinary(string op)(const V v) const if (op == "%") => V(x % v.x  , y % v.y  , z % v.z  , w % v.w  );
-    V opBinary(string op)(T scale)   const if (op == "%") => V(x % scale, y % scale, z % scale, w % scale);
+    V opBinary(string op)(T mod)     const if (op == "%") => V(x % mod  , y % mod  , z % mod  , w % mod  );
+
+    V opBinaryRight(string op)(T scale) const if (op == "*") => V(scale * x, scale * y, scale * z, scale * w);
+    V opBinaryRight(string op)(T add)   const if (op == "+") => V(add + x  , add + y  , add + z  , add + w  );
+    V opBinaryRight(string op)(T sub)   const if (op == "-") => V(sub - x  , sub - y  , sub - z  , sub - w  );
+    V opBinaryRight(string op)(T scale) const if (op == "/") => V(scale / x, scale / y, scale / z, scale / w);
+    V opBinaryRight(string op)(T mod)   const if (op == "%") => V(mod % x  , mod % y  , mod % z  , mod % w  );
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   w *= v.w;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; w *= scale; return this; }
@@ -892,7 +920,7 @@ pure nothrow @nogc @safe:
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   z /= v.z;   w /= v.w;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; z /= scale; w /= scale; return this; }
     V opOpAssign(string op)(const V v) if (op == "%") { x %= v.x;   y %= v.y;   z %= v.z;   w %= v.w;   return this; }
-    V opOpAssign(string op)(T scale)   if (op == "%") { x %= scale; y %= scale; z %= scale; w %= scale; return this; }
+    V opOpAssign(string op)(T mod)     if (op == "%") { x %= mod;   y %= mod;   z %= mod;   w %= mod;   return this; }
 
     V opUnary(string op)() const if (op == "+") => this;
     V opUnary(string op)() const if (op == "-") => V(-x, -y, -z, -w);
@@ -923,6 +951,7 @@ pure nothrow @nogc @safe:
 
     alias V3 = Vector3Impl!T;
     alias B = BasisImpl!T;
+    alias Elem = T;
 
     V3[3] rows = 
     [
@@ -1351,6 +1380,23 @@ slerp(to: Basis, weight: float) const
 
     /+ transposed() const +/
 
+
+    U opCast(U)() const if (isBasisImpl!U)
+    {    
+        static if (is(U.Elem == float))
+        {
+            alias VD = Vector3Impl!float;
+            return U(cast(VD)rows[0], cast(VD)rows[1], cast(VD)rows[1]);
+        }
+        else static if (is(U.Elem == double))
+        {
+            alias VD = Vector3Impl!double;
+            return U(cast(VD)rows[0], cast(VD)rows[1], cast(VD)rows[1]);
+        }
+        else
+            static assert(false);
+    }
+
     // operators
     V3 opIndex(size_t n) const => rows[n];
     B opBinary(string op)(const B m) const if (op == "*")
@@ -1371,3 +1417,4 @@ private:
 enum bool isVector2Impl(T) = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T) = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T) = is(T : Vector4Impl!U, U...);
+enum bool isBasisImpl(T)   = is(T : BasisImpl!U, U...);

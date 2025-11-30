@@ -133,6 +133,28 @@ unittest
     assert(x == Vector4i(4, 1, 83, 10));
 }
 
+@("Vector right operands")
+unittest
+{
+    Vector2i A = Vector2i(1, 2);
+    A = -(1 - (1 + A));
+    A = 2 * A;
+    A = 4 / A;
+    assert(A == Vector2i(2, 1));
+
+    Vector3i B = Vector3i(9, 6, 3);
+    B = -(1 - (1 + B));
+    B = 2 * B;
+    B = 36 / B;
+    assert(B == Vector3i(2, 3, 6));
+
+    Vector4i C = Vector4i(1, 2, 3, 4);
+    C = -(1 - (1 + C));
+    C = 2 * C;
+    C = 24 / C;
+    assert(C == Vector4i(12, 6, 4, 3));
+}
+
 @("Vector3 octahedron encoding")
 unittest
 {
