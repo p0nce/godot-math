@@ -29,7 +29,7 @@ enum double GM_SQRT12 = 0.7071067811865475244008443621048490;
 enum double GM_SQRT13 = 0.57735026918962576450914878050196;
 enum double GM_LN2    = 0.6931471805599453094172321215;
 enum double GM_TAU    = 6.2831853071795864769252867666;
-enum real   GM_PI     = 0x1.921fb54442d18469898cc51701b84p+1L;
+enum double GM_PI     = 0x1.921fb54442d18469898cc51701b84p+1;
 enum double GM_E      = 2.7182818284590452353602874714;
 enum double GM_INF    = double.infinity;
 enum double GM_NaN    = double.nan;
@@ -244,8 +244,8 @@ bool gm_is_equal_approx(double p_left, double p_right, double p_tolerance) ///
     return gm_abs(p_left - p_right) < p_tolerance;
 }
 
-float  gm_is_finite(float x)  => libc.isfinite(x); ///
-double gm_is_finite(double x) => libc.isfinite(x); ///
+bool gm_is_finite(float x)  => libc.isfinite(x) != 0; ///
+bool gm_is_finite(double x) => libc.isfinite(x) != 0; ///
 
 bool gm_is_zero_approx(float  value) => gm_abs(value) < cast(float)GM_CMP_EPSILON;
 bool gm_is_zero_approx(double value) => gm_abs(value) < GM_CMP_EPSILON;

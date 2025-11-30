@@ -15,7 +15,7 @@ pure nothrow @nogc @safe:
 // - in global scope, symbols get a gm_ prefix.
 // - .clampf/.clampi replaced by overloaded .clamp
 // - .snappedf /.snappedi replaced by overloaded .snapped
-// - same for minf/mini/maxf/maxi => replaced bu min/max
+// - same for minf/mini/maxf/maxi => replaced by min/max
 
 // Provide both float and double versions should the need arise.
 alias Vector2  = Vector2Impl!float;
@@ -26,12 +26,20 @@ alias Vector3  = Vector3Impl!float;
 alias Vector3d = Vector3Impl!double;
 alias Vector3i = Vector3Impl!int;
 
+alias Vector4  = Vector4Impl!float;
+alias Vector4d = Vector4Impl!double;
+alias Vector4i = Vector4Impl!int;
+
 alias Basis    = BasisImpl!float;
 alias Basisd   = BasisImpl!double;
 
+// TODO direction_to
 
 // Implementation done for: 
-// ~~Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html~~
+// - Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html
+// - Vector3 => https://docs.godotengine.org/en/stable/classes/class_vector3.html
+// - Vector2i => https://docs.godotengine.org/en/stable/classes/class_vector2i.html
+// - Vector3i => https://docs.godotengine.org/en/stable/classes/class_vector3i.html
 //
 // Note: In case of semantic conflict, the way Godot does it is favoured.
 
@@ -225,7 +233,7 @@ pure nothrow @nogc @safe:
 
     static if (isFloat)
         V slide(const V normal) const => this - normal * dot(normal);
-    V snapped(const V step) const => V(cast(T)gm_snapped(x, step.x), gm_snapped(y, step.y));
+    V snapped(const V step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y));
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step));
 
     // operators
@@ -253,6 +261,8 @@ pure nothrow @nogc @safe:
     V opBinary(string op)(T sub)     const if (op == "-") => V(x - sub  , y - sub  );
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale);
+    V opBinary(string op)(const V v) const if (op == "%") => V(x % v.x  , y % v.y  );
+    V opBinary(string op)(T scale)   const if (op == "%") => V(x % scale, y % scale);
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; return this; }
@@ -262,6 +272,8 @@ pure nothrow @nogc @safe:
     V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y -= sub;   return this; }
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; return this; }
+    V opOpAssign(string op)(const V v) if (op == "%") { x %= v.x;   y %= v.y;   return this; }
+    V opOpAssign(string op)(T scale)   if (op == "%") { x %= scale; y %= scale; return this; }
     
     V opUnary(string op)() const if (op == "+") => this;    
     V opUnary(string op)() const if (op == "-") => V(-x, -y);
@@ -329,7 +341,7 @@ pure nothrow @nogc @safe:
 
     this(T x, T y, T z) { this.x = x; this.y = y; this.z = z; }
     this(T[3] v) { this.x = v[0]; this.y = v[1]; this.z = v[2];}
-    V abs() const => V(x < 0 ? -x : x, y < 0 ? -y : y, z < 0 ? -z : z);
+    V abs() const => V(gm_abs(x), gm_abs(y), gm_abs(z));
 
     static if (isFloat)
     {
@@ -353,8 +365,8 @@ pure nothrow @nogc @safe:
     {
         V cross(const V other) const
             => V( y * other.z - z * other.y,
-                        z * other.x - x * other.z,
-                        x * other.y - y * other.x );
+                  z * other.x - x * other.z,
+                  x * other.y - y * other.x );
         V cubic_interpolate(const V b, const V pre_a, const V post_b, T weight) const
             => V( gm_cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
                   gm_cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight),
@@ -411,7 +423,7 @@ pure nothrow @nogc @safe:
         if (y > z) return AXIS_Y;
         return AXIS_Z;
     }
-    V maxf(T v) const 
+    V max(T v) const 
         => V( x > v ? x : v, y > v ? y : v, z > v ? z : v );
     V min(const V other) const 
         => V( x < other.x ? x : other.x, y < other.y ? y : other.y, z < other.z ? z : other.z );
@@ -421,7 +433,7 @@ pure nothrow @nogc @safe:
         if (y < z) return AXIS_Y;
         return AXIS_Z;
     }
-    V minf(T v) const 
+    V min(T v) const 
         => V( x < v ? x : v, y < v ? y : v, z < v ? z : v );
 
     static if (isFloat)
@@ -570,12 +582,12 @@ pure nothrow @nogc @safe:
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z);
 
-    U opCast(U)() const if (isVector2Impl!U)
-    {    
+    U opCast(U)() const if (isVector3Impl!U)
+    {
         static if (is(U.Elem == float))
             return U(cast(float)x, cast(float)y, cast(float)z);
         else static if (is(U.Elem == double))
-            return U(cast(double)x, cast(double)y, cast(double)y);
+            return U(cast(double)x, cast(double)y, cast(double)z);
         else static if (is(U.Elem == int))
             return U(cast(int)x, cast(int)y, cast(int)z );
         else
@@ -590,6 +602,8 @@ pure nothrow @nogc @safe:
     V opBinary(string op)(T sub)     const if (op == "-") => V(x - sub  , y - sub  , z - sub  );
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  , z / v.z  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale, z / scale);
+    V opBinary(string op)(const V v) const if (op == "%") => V(x % v.x  , y % v.y  , z % v.z  );
+    V opBinary(string op)(T scale)   const if (op == "%") => V(x % scale, y % scale, z % scale);
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
@@ -599,10 +613,230 @@ pure nothrow @nogc @safe:
     V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y -= sub;   z -= sub;   return this; }
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   z /= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; z /= scale; return this; }
+    V opOpAssign(string op)(const V v) if (op == "%") { x %= v.x;   y %= v.y;   z %= v.z;   return this; }
+    V opOpAssign(string op)(T scale)   if (op == "%") { x %= scale; y %= scale; z %= scale; return this; }
     
     V opUnary(string op)() const if (op == "+") => this;
     V opUnary(string op)() const if (op == "-") => V(-x, -y, -z);
 }
+
+
+
+
+
+
+
+
+
+
+/*
+██╗   ██╗███████╗ ██████╗████████╗ ██████╗ ██████╗ ██╗  ██╗
+██║   ██║██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██║  ██║
+██║   ██║█████╗  ██║        ██║   ██║   ██║██████╔╝███████║
+╚██╗ ██╔╝██╔══╝  ██║        ██║   ██║   ██║██╔══██╗╚════██║
+ ╚████╔╝ ███████╗╚██████╗   ██║   ╚██████╔╝██║  ██║     ██║
+  ╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝     ╚═╝
+*/
+/// See also: 
+struct Vector4Impl(T) 
+    if (is(T : float) || is(T : double))
+{
+pure nothrow @nogc @safe:
+
+    private 
+    {
+        alias V = Vector4Impl!T,
+              V3 = Vector3Impl!T;
+
+        enum bool isFloat = isFloatingPoint!T;
+        static if (isFloat)
+            alias F = T;
+        else 
+            alias F = float;
+        alias Elem = T;
+    }
+
+    union { T x = 0; T width;  }
+    union { T y = 0; T height; }
+    union { T z = 0; T depth;  }
+    union { T w = 0; }
+
+    enum : int
+    {
+        AXIS_X,
+        AXIS_Y,
+        AXIS_Z,
+        AXIS_W,
+    }
+
+    enum V ZERO    = V( 0,  0,  0,  0);
+    enum V ONE     = V( 1,  1,  1,  1);
+    static if (isFloat)
+        enum V INF = V( GM_INF, GM_INF, GM_INF, GM_INF);
+
+    this(T x, T y, T z, T w) { this.x = x; this.y = y; this.z = z; this.w = w; }
+    this(T[4] v) { this.x = v[0]; this.y = v[1]; this.z = v[2]; this.w = v[3]; }
+    V abs() const => V(gm_abs(x), gm_abs(y), gm_abs(z), gm_abs(w));
+
+    static if (isFloat)
+        V ceil() const => V(gm_ceil(x), gm_ceil(y), gm_ceil(z), gm_ceil(w));
+    
+    V clamp(const V min, const V max) const 
+        => V(gm_clamp(x, min.x, max.x), gm_clamp(y, min.y, max.y), gm_clamp(z, min.z, max.z), gm_clamp(w, min.w, max.w));
+    V clamp(T min, T max) const 
+        => V(gm_clamp(x, min, max), gm_clamp(y, min, max), gm_clamp(z, min, max), gm_clamp(w, min, max));
+    static if (isFloat)
+    {
+        V cubic_interpolate(const V b, const V pre_a, const V post_b, T weight) const
+            => V( gm_cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
+                  gm_cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight),
+                  gm_cubic_interpolate(z, b.z, pre_a.z, post_b.z, weight),
+                  gm_cubic_interpolate(w, b.w, pre_a.w, post_b.w, weight) );
+        V cubic_interpolate_in_time(const V b, const V pre_a, const V post_b, T weight, T b_t, T pre_a_t, T post_b_t) const
+            => V( gm_cubic_interpolate_in_time(x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t),
+                  gm_cubic_interpolate_in_time(y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t),
+                  gm_cubic_interpolate_in_time(z, b.z, pre_a.z, post_b.z, weight, b_t, pre_a_t, post_b_t),
+                  gm_cubic_interpolate_in_time(w, b.w, pre_a.w, post_b.w, weight, b_t, pre_a_t, post_b_t) );
+
+        V direction_to (const V v) const => (v - this).normalized();
+    }
+    T distance_squared_to(const V v) const 
+        => (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y) + (z - v.z) * (z - v.z) + (w - v.w) * (w - v.w);
+    F distance_to(const V v) const => gm_sqrt(cast(F) distance_squared_to(v));
+
+    static if (isFloat)
+    {
+        T dot(const V other) const => x * other.x + y * other.y + z * other.z + w * other.w;
+        V floor() const => V(gm_floor(x), gm_floor(y), gm_floor(z), gm_floor(w));
+        V inverse() const => V(1 / x, 1 / y, 1 / z, 1 / w);
+        bool is_equal_approx(const V other) const
+           => gm_is_equal_approx(x, other.x) && gm_is_equal_approx(y, other.y) && gm_is_equal_approx(z, other.z) && gm_is_equal_approx(w, other.w);
+        bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z) && gm_is_finite(w);
+        bool is_normalized() const 
+            => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
+        bool is_zero_approx() const 
+            => gm_is_zero_approx(x) && gm_is_zero_approx(y) && gm_is_zero_approx(z) && gm_is_zero_approx(w);
+    }
+
+    F length() const => gm_sqrt(cast(F) length_squared());
+    T length_squared() const => x * x + y * y + z * z + w * w;
+
+    static if (isFloat)
+    {
+        V lerp(const V to, T weight) const 
+            => V( gm_lerp(x, to.x, weight), gm_lerp(y, to.y, weight), gm_lerp(z, to.z, weight), gm_lerp(w, to.w, weight) );
+        V limit_length(T len) const
+        {
+            T l = length();
+            V v = this;
+            if (l > 0 && len < l)
+            {
+                v /= l;
+                v *= len;
+            }
+            return v;
+        }
+    }
+
+    V max(const V other) const 
+        => V( x > other.x ? x : other.x, y > other.y ? y : other.y, z > other.z ? z : other.z, w > other.w ? w : other.w );
+    int max_axis_index() const
+    {
+        if (x > y && x > z && x > w) return AXIS_X;
+        if (y > z && y > w) return AXIS_Y;
+        if (z > w) return AXIS_Z;
+        return AXIS_W;
+    }
+    V max(T v) const 
+        => V( x > v ? x : v, y > v ? y : v, z > v ? z : v, w > v ? w : v );
+    V min(const V other) const 
+        => V( x < other.x ? x : other.x, y < other.y ? y : other.y, z < other.z ? z : other.z, w < other.w ? w : other.w );
+    int min_axis_index() const
+    {
+        if (x < y && x < z && x < w) return AXIS_X;
+        if (y < z && y < w) return AXIS_Y;
+        if (z < w) return AXIS_Z;
+        return AXIS_W;
+    }
+    V min(T v) const 
+        => V( x < v ? x : v, y < v ? y : v, z < v ? z : v, w < v ? w : v );
+
+    static if (isFloat)
+    {
+        void normalize()
+        {
+            T l = x * x + y * y + z * z + w * w;
+            if (l != 0)
+            {
+                l = gm_sqrt(l);
+                x /= l;
+                y /= l;
+                z /= l;
+                w /= l;
+            }
+        }
+        V normalized() const
+        {
+            V v = this;
+            v.normalize();
+            return v;
+        }
+
+        V posmod(T mod) const => V(gm_fposmod(x, mod), gm_fposmod(y, mod), gm_fposmod(z, mod), gm_fposmod(w, mod));
+        V posmodv(const V modv) const => V(gm_fposmod(x, modv.x), gm_fposmod(y, modv.y), gm_fposmod(z, modv.z), gm_fposmod(w, modv.w));
+        V round() const => V(gm_round(x), gm_round(y), gm_round(z), gm_round(w));
+        V slide(const V normal) const => this - normal * dot(normal);
+    }
+
+    V sign() const => V(gm_sign(x), gm_sign(y), gm_sign(z), gm_sign(w));
+
+    V snapped(const(V) step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y), gm_snapped(z, step.z), gm_snapped(w, step.w));
+    V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step), gm_snapped(w, step));
+ 
+    // operators
+    ref inout(T) opIndex(size_t n) inout return 
+    { 
+        assert(n < 4); 
+        switch (n) 
+        { 
+            case 0: return x; 
+            case 1: return y; 
+            case 2: return z; 
+            default: return w; 
+        } 
+    }
+
+    bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z) && (w == v.w);
+
+    V opBinary(string op)(const V v) const if (op == "*") => V(x * v.x  , y * v.y  , z * v.z  , w * v.w  );
+    V opBinary(string op)(T scale)   const if (op == "*") => V(x * scale, y * scale, z * scale, w * scale);
+    V opBinary(string op)(const V v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
+    V opBinary(string op)(T add)     const if (op == "+") => V(x + add  , y + add  , z + add  , w + add  );
+    V opBinary(string op)(const V v) const if (op == "-") => V(x - v.x  , y - v.y  , z - v.z  , w - v.w  );
+    V opBinary(string op)(T sub)     const if (op == "-") => V(x - sub  , y - sub  , z - sub  , w - sub  );
+    V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  , z / v.z  , w / v.w  );
+    V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale, z / scale, w / scale);
+    V opBinary(string op)(const V v) const if (op == "%") => V(x % v.x  , y % v.y  , z % v.z  , w % v.w  );
+    V opBinary(string op)(T scale)   const if (op == "%") => V(x % scale, y % scale, z % scale, w % scale);
+
+    V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   w *= v.w;   return this; }
+    V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; w *= scale; return this; }
+    V opOpAssign(string op)(const V v) if (op == "+") { x += v.x;   y += v.y;   z += v.z;   w += v.w;   return this; }
+    V opOpAssign(string op)(T add)     if (op == "+") { x += add;   y += add;   z += add;   w += add;   return this; }
+    V opOpAssign(string op)(const V v) if (op == "-") { x -= v.x;   y -= v.y;   z -= v.z;   w -= v.w;   return this; }
+    V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y -= sub;   z -= sub;   w -= sub;   return this; }
+    V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   z /= v.z;   w /= v.w;   return this; }
+    V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; z /= scale; w /= scale; return this; }
+    V opOpAssign(string op)(const V v) if (op == "%") { x %= v.x;   y %= v.y;   z %= v.z;   w %= v.w;   return this; }
+    V opOpAssign(string op)(T scale)   if (op == "%") { x %= scale; y %= scale; z %= scale; w %= scale; return this; }
+
+    V opUnary(string op)() const if (op == "+") => this;
+    V opUnary(string op)() const if (op == "-") => V(-x, -y, -z, -w);
+}
+
+
+
+
 
 
 
@@ -678,7 +912,7 @@ pure nothrow @nogc @safe:
     void set_axis_angle(const V3 axis, T angle)
     {
         // Rotation matrix from axis and angle, see https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_angle
-        assert(axis.is_normalized);
+        assert(axis.is_normalized());
         V3 axis_sq = V3(axis.x * axis.x, axis.y * axis.y, axis.z * axis.z);
         T cosine = gm_cos(angle);
         rows[0][0] = axis_sq.x + cosine * (1 - axis_sq.x);

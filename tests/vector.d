@@ -18,29 +18,58 @@ unittest
     assert(b.is_zero_approx);
 
     Vector2i a2 = Vector2i(0, 1);
+    int sqlen = a2.length_squared();
+    float len = a2.length();
     immutable Vector2i b2 = Vector2i(0, 0);
+
     assert(b2[0] == 0 && b2[1] == 0);
     Vector2i c = [0, 1];
     float[2] arr2 = [4.0f, 1];
     Vector2 d = arr2;
     assert(a2 == c);
     assert(cast(Vector2d)a2 != Vector2d.ZERO);
+}
 
+@("Vector arithmetics")
+unittest 
+{
     Vector2i A = Vector2i(-42, 87);
-    A = (((A + 8) - 8) * 8) / 8;
+    A = ((((A + 8) - 8) * 8) / 8) % 100;
     A += 2;
     A -= 2;
     A *= 4;
     A /= 4;
+    A %= 100;
     assert(A == Vector2i(-42, 87));
 
     Vector3i B = Vector3i(1, 2, 3);
-    B = (((B + 1) - 1) * 1) / 1;
+    B = ((((B + 1) - 1) * 1) / 1) % 100;;
     B += 1;
     B -= 1;
     B *= 1;
     B /= 1;
+    B %= 100;
     assert(B == Vector3i(1, 2, 3));
+
+    Vector4i C = Vector4i(1, 2, 3, 4);
+    C = ((((C + 1) - 1) * 1) / 1) % 100;
+    C += 1;
+    C -= 1;
+    C *= 1;
+    C /= 1;
+    C %= 100;
+    assert(C == Vector4i(1, 2, 3, 4));
+
+    Vector4i x = [4, 5, 6, 7];
+    assert(x == x);
+    --x[0];
+    assert(x[0] == 3);
+    ++x[0];
+    assert(x[0] == 4);
+    x[1] &= 1;
+    x[2] = 77 + x[2];
+    x[3] += 3;
+    assert(x == Vector4i(4, 1, 83, 10));
 }
 
 @("Octahedron encoding")
@@ -65,18 +94,8 @@ unittest
 
 
 
-    /*
-    Vector4i x = [4, 5, 6, 7];
-    assert(x == x);
-    --x[0];
-    assert(x[0] == 3);
-    ++x[0];
-    assert(x[0] == 4);
-    x[1] &= 1;
-    x[2] = 77 + x[2];
-    x[3] += 3;
-    assert(x == [4, 1, 83, 10]);
-    */
+    
+    
 /*
     assert(Vector2i(4, 5) + 1 == Vector2i(5,6));
     assert(Vector2i(4, 5) - 1 == Vector2i(3,4));
