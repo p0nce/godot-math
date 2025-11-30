@@ -13,7 +13,7 @@ unittest
 
     Vector2d b = Vector2d(2.5, 4.0) + 4.0;
     b /= 2.0;
-    assert(b.is_equal_approx( Vector2d(3.25, 4.0)));
+    assert(b.is_equal_approx( Vector2d(3.25, 4.00000001)));
     b = b * Vector2d.ZERO;
     assert(b.is_zero_approx);
 
@@ -25,6 +25,22 @@ unittest
     Vector2 d = arr2;
     assert(a2 == c);
     assert(cast(Vector2d)a2 != Vector2d.ZERO);
+
+    Vector2i A = Vector2i(-42, 87);
+    A = (((A + 8) - 8) * 8) / 8;
+    A += 2;
+    A -= 2;
+    A *= 4;
+    A /= 4;
+    assert(A == Vector2i(-42, 87));
+
+    Vector3i B = Vector3i(1, 2, 3);
+    B = (((B + 1) - 1) * 1) / 1;
+    B += 1;
+    B -= 1;
+    B *= 1;
+    B /= 1;
+    assert(B == Vector3i(1, 2, 3));
 }
 
 @("Octahedron encoding")

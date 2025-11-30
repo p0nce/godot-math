@@ -17,10 +17,6 @@ pure nothrow @nogc @safe:
 // - .snappedf /.snappedi replaced by overloaded .snapped
 // - same for minf/mini/maxf/maxi => replaced bu min/max
 
-// TODO
-// - finish vector 3 functions
-// - finish vector3i
-
 // Provide both float and double versions should the need arise.
 alias Vector2  = Vector2Impl!float;
 alias Vector2d = Vector2Impl!double;
@@ -28,7 +24,7 @@ alias Vector2i = Vector2Impl!int;
 
 alias Vector3  = Vector3Impl!float;
 alias Vector3d = Vector3Impl!double;
-//alias Vector3i = Vector3Impl!int;
+alias Vector3i = Vector3Impl!int;
 
 alias Basis    = BasisImpl!float;
 alias Basisd   = BasisImpl!double;
@@ -53,14 +49,17 @@ struct Vector2Impl(T)
 {
 pure nothrow @nogc @safe:
 
-    alias V = Vector2Impl!T;
-    enum bool isInt = is(T == int);
-    enum bool isFloat = isFloatingPoint!T;
-    static if (isFloat)        
-        alias F = T;
-    else 
-        alias F = float;
-    alias Elem = T;
+    private
+    {
+        alias V = Vector2Impl!T;
+        enum bool isInt = is(T == int);
+        enum bool isFloat = isFloatingPoint!T;
+        static if (isFloat)        
+            alias F = T;
+        else 
+            alias F = float;
+        alias Elem = T;
+    }
     
     union { T x = 0; T width;  }
     union { T y = 0; T height; }
@@ -248,29 +247,21 @@ pure nothrow @nogc @safe:
 
     V opBinary(string op)(const V v) const if (op == "*") => V(x * v.x  , y * v.y  );
     V opBinary(string op)(T scale)   const if (op == "*") => V(x * scale, y * scale);
-    V opBinary(string op)(int scale) const if (op == "*") => V(x * scale, y * scale);
     V opBinary(string op)(const V v) const if (op == "+") => V(x + v.x  , y + v.y  );
     V opBinary(string op)(T add)     const if (op == "+") => V(x + add  , y + add  );
-    V opBinary(string op)(int add)   const if (op == "+") => V(x + add  , y + add  );
     V opBinary(string op)(const V v) const if (op == "-") => V(x - v.x  , y - v.y  );
-    V opBinary(string op)(T sub)     const if (op == "-") => V(x - add  , y - add  );
-    V opBinary(string op)(int sub)   const if (op == "-") => V(x - add  , y - add  );
+    V opBinary(string op)(T sub)     const if (op == "-") => V(x - sub  , y - sub  );
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale);
-    V opBinary(string op)(int scale) const if (op == "/") => V(x / scale, y / scale);
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; return this; }
-    V opOpAssign(string op)(int scale) if (op == "*") { x *= scale; y *= scale; return this; }
     V opOpAssign(string op)(const V v) if (op == "+") { x += v.x;   y += v.y;   return this; }
     V opOpAssign(string op)(T add)     if (op == "+") { x += add;   y += add;   return this; }
-    V opOpAssign(string op)(int add)   if (op == "+") { x += add;   y += add;   return this; }
     V opOpAssign(string op)(const V v) if (op == "-") { x -= v.x;   y -= v.y;   return this; }
-    V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y += sub;   return this; }
-    V opOpAssign(string op)(int sub)   if (op == "-") { x -= sub;   y += sub;   return this; }
+    V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y -= sub;   return this; }
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; return this; }
-    V opOpAssign(string op)(int scale) if (op == "/") { x /= scale; y /= scale; return this; }
     
     V opUnary(string op)() const if (op == "+") => this;    
     V opUnary(string op)() const if (op == "-") => V(-x, -y);
@@ -304,7 +295,13 @@ pure nothrow @nogc @safe:
         alias V = Vector3Impl!T,
               V2 = Vector2Impl!T;
 
+        enum bool isInt = is(T == int);
         enum bool isFloat = isFloatingPoint!T;
+        static if (isFloat)        
+            alias F = T;
+        else 
+            alias F = float;
+        alias Elem = T;
     }
 
     union { T x = 0; T width;  }
@@ -333,61 +330,77 @@ pure nothrow @nogc @safe:
     this(T x, T y, T z) { this.x = x; this.y = y; this.z = z; }
     this(T[3] v) { this.x = v[0]; this.y = v[1]; this.z = v[2];}
     V abs() const => V(x < 0 ? -x : x, y < 0 ? -y : y, z < 0 ? -z : z);
-    T angle_to(const V to) const => gm_atan2(cross(to).length(), dot(to));
-    V bezier_derivative(const V c1, const V c2, const V end, T t) const
-        => V( gm_bezier_derivative(x, c1.x, c2.x, end.x, t),
-              gm_bezier_derivative(y, c1.y, c2.y, end.y, t),
-              gm_bezier_derivative(z, c1.z, c2.z, end.z, t) );
-    V bezier_interpolate(const V c1, const V c2, const V end, T t) const
-        => V( gm_bezier_interpolate(x, c1.x, c2.x, end.x, t),
-              gm_bezier_interpolate(y, c1.y, c2.y, end.y, t),
-              gm_bezier_interpolate(z, c1.z, c2.z, end.z, t) );
-    V bounce(const V normal) const => -reflect(normal);
-    V ceil() const => V(gm_ceil(x), gm_ceil(y), gm_ceil(z));
+
+    static if (isFloat)
+    {
+        T angle_to(const V to) const => gm_atan2(cross(to).length(), dot(to));
+        V bezier_derivative(const V c1, const V c2, const V end, T t) const
+            => V( gm_bezier_derivative(x, c1.x, c2.x, end.x, t),
+                  gm_bezier_derivative(y, c1.y, c2.y, end.y, t),
+                  gm_bezier_derivative(z, c1.z, c2.z, end.z, t) );
+        V bezier_interpolate(const V c1, const V c2, const V end, T t) const
+            => V( gm_bezier_interpolate(x, c1.x, c2.x, end.x, t),
+                  gm_bezier_interpolate(y, c1.y, c2.y, end.y, t),
+                  gm_bezier_interpolate(z, c1.z, c2.z, end.z, t) );
+        V bounce(const V normal) const => -reflect(normal);
+        V ceil() const => V(gm_ceil(x), gm_ceil(y), gm_ceil(z));
+    }
     V clamp(const V min, const V max) const 
         => V(gm_clamp(x, min.x, max.x), gm_clamp(y, min.y, max.y), gm_clamp(z, min.z, max.z));
     V clamp(T min, T max) const 
         => V(gm_clamp(x, min, max), gm_clamp(y, min, max), gm_clamp(z, min, max));
-    V cross(const V other) const
-        => V( y * other.z - z * other.y,
-                    z * other.x - x * other.z,
-                    x * other.y - y * other.x );
-    V cubic_interpolate(const V b, const V pre_a, const V post_b, T weight) const
-        => V( gm_cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
-              gm_cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight),
-              gm_cubic_interpolate(z, b.z, pre_a.z, post_b.z, weight) );
-    V cubic_interpolate_in_time(const V b, const V pre_a, const V post_b, T weight, T b_t, T pre_a_t, T post_b_t) const
-        => V( gm_cubic_interpolate_in_time(x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t),
-              gm_cubic_interpolate_in_time(y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t),
-              gm_cubic_interpolate_in_time(z, b.z, pre_a.z, post_b.z, weight, b_t, pre_a_t, post_b_t) );
-    V direction_to(const V to) const => (to - this).normalized();
+    static if (isFloat)
+    {
+        V cross(const V other) const
+            => V( y * other.z - z * other.y,
+                        z * other.x - x * other.z,
+                        x * other.y - y * other.x );
+        V cubic_interpolate(const V b, const V pre_a, const V post_b, T weight) const
+            => V( gm_cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
+                  gm_cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight),
+                  gm_cubic_interpolate(z, b.z, pre_a.z, post_b.z, weight) );
+        V cubic_interpolate_in_time(const V b, const V pre_a, const V post_b, T weight, T b_t, T pre_a_t, T post_b_t) const
+            => V( gm_cubic_interpolate_in_time(x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t),
+                  gm_cubic_interpolate_in_time(y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t),
+                  gm_cubic_interpolate_in_time(z, b.z, pre_a.z, post_b.z, weight, b_t, pre_a_t, post_b_t) );
+        V direction_to(const V to) const => (to - this).normalized();
+    }
     T distance_squared_to(const V v) const 
         => (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y) + (z - v.z) * (z - v.z);
-    T distance_to(const V v) const => gm_sqrt(distance_squared_to(v));
-    T dot(const V other) const => x * other.x + y * other.y + z * other.z;
-    V floor() const => V(gm_floor(x), gm_floor(y), gm_floor(z));
-    V inverse() const => V(1 / x, 1 / y, 1 / z);
-    bool is_equal_approx(const V other) const
-        => gm_is_equal_approx(x, other.x) && gm_is_equal_approx(y, other.y) && gm_is_equal_approx(z, other.z);
-    bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z);
-    bool is_normalized() const 
-        => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
-    bool is_zero_approx() const 
-        => gm_is_zero_approx(x) && gm_is_zero_approx(y) && gm_is_zero_approx(z);
-    T length() const => gm_sqrt(cast(T) length_squared());
-    T length_squared() const => x * x + y * y + z * z;
-    V lerp(const V to, T weight) const 
-        => V( gm_lerp(x, to.x, weight), gm_lerp(y, to.y, weight), gm_lerp(z, to.z, weight) );
-    V limit_length(T len) const
+    F distance_to(const V v) const => gm_sqrt(cast(F) distance_squared_to(v));
+
+    static if (isFloat)
     {
-        T l = length();
-        V v = this;
-        if (l > 0 && len < l)
+        T dot(const V other) const => x * other.x + y * other.y + z * other.z;
+        V floor() const => V(gm_floor(x), gm_floor(y), gm_floor(z));
+        V inverse() const => V(1 / x, 1 / y, 1 / z);
+        bool is_equal_approx(const V other) const
+           => gm_is_equal_approx(x, other.x) && gm_is_equal_approx(y, other.y) && gm_is_equal_approx(z, other.z);
+        bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z);
+        bool is_normalized() const 
+            => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
+        bool is_zero_approx() const 
+            => gm_is_zero_approx(x) && gm_is_zero_approx(y) && gm_is_zero_approx(z);
+    }
+
+    F length() const => gm_sqrt(cast(F) length_squared());
+    T length_squared() const => x * x + y * y + z * z;
+
+    static if (isFloat)
+    {
+        V lerp(const V to, T weight) const 
+            => V( gm_lerp(x, to.x, weight), gm_lerp(y, to.y, weight), gm_lerp(z, to.z, weight) );
+        V limit_length(T len) const
         {
-            v /= l;
-            v *= len;
+            T l = length();
+            V v = this;
+            if (l > 0 && len < l)
+            {
+                v /= l;
+                v *= len;
+            }
+            return v;
         }
-        return v;
     }
 
     V max(const V other) const 
@@ -410,140 +423,148 @@ pure nothrow @nogc @safe:
     }
     V minf(T v) const 
         => V( x < v ? x : v, y < v ? y : v, z < v ? z : v );
-    V move_toward(const V to, T delta) const
+
+    static if (isFloat)
     {
-        V v = this;
-        V vd = to - v;
-        T len = vd.length();
-        return len <= delta || len < cast(T)GM_CMP_EPSILON ? to : v + vd / len * delta;
-    }
-    void normalize()
-    {
-        T l = x * x + y * y + z * z;
-        if (l != 0)
+        V move_toward(const V to, T delta) const
         {
-            l = gm_sqrt(l);
-            x /= l;
-            y /= l;
-            z /= l;
+            V v = this;
+            V vd = to - v;
+            T len = vd.length();
+            return len <= delta || len < cast(T)GM_CMP_EPSILON ? to : v + vd / len * delta;
         }
-    }
-    V normalized() const
-    {
-        V v = this;
-        v.normalize();
-        return v;
-    }
-    
-    static V octahedron_decode(const V2 oct) 
-    {
-        V2 f = V2(oct.x * 2 - 1, oct.y * 2 - 1);
-        V n = V(f.x, f.y, 1 - gm_abs(f.x) - gm_abs(f.y));
-        T t = gm_clamp(-n.z, cast(T)0, cast(T)1);
-        n.x += n.x >= 0 ? -t : t;
-        n.y += n.y >= 0 ? -t : t;
-        return n.normalized();
-    }
-
-    V2 octahedron_encode() const
-    {
-        V n = this;
-        n /= gm_abs(n.x) + gm_abs(n.y) + gm_abs(n.z);
-        V2 o;
-        if (n.z >= 0) 
+        void normalize()
         {
-            o.x = n.x;
-            o.y = n.y;
-        } 
-        else 
-        {
-            o.x = (1 - gm_abs(n.y)) * (n.x >= 0 ? 1 : -1);
-            o.y = (1 - gm_abs(n.x)) * (n.y >= 0 ? 1 : -1);
+            T l = x * x + y * y + z * z;
+            if (l != 0)
+            {
+                l = gm_sqrt(l);
+                x /= l;
+                y /= l;
+                z /= l;
+            }
         }
-        o.x = o.x * 0.5f + 0.5f;
-        o.y = o.y * 0.5f + 0.5f;
-        return o;
-    }
+        V normalized() const
+        {
+            V v = this;
+            v.normalize();
+            return v;
+        }
+
+        static V octahedron_decode(const V2 oct) 
+        {
+            V2 f = V2(oct.x * 2 - 1, oct.y * 2 - 1);
+            V n = V(f.x, f.y, 1 - gm_abs(f.x) - gm_abs(f.y));
+            T t = gm_clamp(-n.z, cast(T)0, cast(T)1);
+            n.x += n.x >= 0 ? -t : t;
+            n.y += n.y >= 0 ? -t : t;
+            return n.normalized();
+        }
+
+        V2 octahedron_encode() const
+        {
+            V n = this;
+            n /= gm_abs(n.x) + gm_abs(n.y) + gm_abs(n.z);
+            V2 o;
+            if (n.z >= 0) 
+            {
+                o.x = n.x;
+                o.y = n.y;
+            } 
+            else 
+            {
+                o.x = (1 - gm_abs(n.y)) * (n.x >= 0 ? 1 : -1);
+                o.y = (1 - gm_abs(n.x)) * (n.y >= 0 ? 1 : -1);
+            }
+            o.x = o.x * 0.5f + 0.5f;
+            o.y = o.y * 0.5f + 0.5f;
+            return o;
+        }
     
-    BasisImpl!T outer(const V p_with) const 
-    {
-        BasisImpl!T basis;
-        basis.rows[0] = V(x * p_with.x, x * p_with.y, x * p_with.z);
-        basis.rows[1] = V(y * p_with.x, y * p_with.y, y * p_with.z);
-        basis.rows[2] = V(z * p_with.x, z * p_with.y, z * p_with.z);
-        return basis;
+        BasisImpl!T outer(const V p_with) const 
+        {
+            BasisImpl!T basis;
+            basis.rows[0] = V(x * p_with.x, x * p_with.y, x * p_with.z);
+            basis.rows[1] = V(y * p_with.x, y * p_with.y, y * p_with.z);
+            basis.rows[2] = V(z * p_with.x, z * p_with.y, z * p_with.z);
+            return basis;
+        }
+
+        V posmod(T mod) const => V(gm_fposmod(x, mod), gm_fposmod(y, mod), gm_fposmod(z, mod));
+        V posmodv(const V modv) const => V(gm_fposmod(x, modv.x), gm_fposmod(y, modv.y), gm_fposmod(z, modv.z));
+        V project(const V to) const => to * (dot(to) / to.length_squared());
+
+        V reflect(const V normal) const
+        {
+            assert(normal.is_normalized());
+            return normal * 2 * dot(normal) - this;
+        }
+
+        void rotate(const V axis, T angle)
+        {
+            T axis_length_sq = axis.length_squared();
+            if (gm_is_zero_approx(axis_length_sq))
+                return;
+
+            V norm_axis = axis / gm_sqrt(axis_length_sq);
+
+            T sin_angle = gm_sin(angle);
+            T cos_angle = gm_cos(angle);
+
+            V term1 = this * cos_angle;
+            V term2 = norm_axis.cross(this) * sin_angle;
+            V term3 = norm_axis * (norm_axis.dot(this) * (1.0f - cos_angle));
+
+            this = term1 + term2 + term3;
+        }
+
+        V rotated(const V axis, T angle) const
+        {
+            V v = this;
+            v.rotate(axis, angle);
+            return v;
+        }
+
+        V round() const => V(gm_round(x), gm_round(y), gm_round(z));
     }
 
-    V posmod(T mod) const => V(gm_fposmod(x, mod), gm_fposmod(y, mod), gm_fposmod(z, mod));
-    V posmodv(const V modv) const => V(gm_fposmod(x, modv.x), gm_fposmod(y, modv.y), gm_fposmod(z, modv.z));
-    V project(const V to) const => to * (dot(to) / to.length_squared());
-
-    V reflect(const V normal) const
-    {
-        assert(normal.is_normalized());
-        return normal * 2 * dot(normal) - this;
-    }
-
-    void rotate(const V axis, T angle)
-    {
-        T axis_length_sq = axis.length_squared();
-        if (gm_is_zero_approx(axis_length_sq))
-            return;
-
-        V norm_axis = axis / gm_sqrt(axis_length_sq);
-
-        T sin_angle = gm_sin(angle);
-        T cos_angle = gm_cos(angle);
-
-        V term1 = this * cos_angle;
-        V term2 = norm_axis.cross(this) * sin_angle;
-        V term3 = norm_axis * (norm_axis.dot(this) * (1.0f - cos_angle));
-
-        this = term1 + term2 + term3;
-    }
-
-    V rotated(const V axis, T angle) const
-    {
-        V v = this;
-        v.rotate(axis, angle);
-        return v;
-    }
-
-    V round() const => V(gm_round(x), gm_round(y), gm_round(z));
     V sign() const => V(gm_sign(x), gm_sign(y), gm_sign(z));
 
-    T signed_angle_to(const V to, const V axis) const
+    static if (isFloat)
     {
-        V cross_to = cross(to);
-        T unsigned_angle = gm_atan2(cross_to.length(), dot(to));
-        T sign = cross_to.dot(axis);
-        return (sign < 0) ? -unsigned_angle : unsigned_angle;
+        T signed_angle_to(const V to, const V axis) const
+        {
+            V cross_to = cross(to);
+            T unsigned_angle = gm_atan2(cross_to.length(), dot(to));
+            T sign = cross_to.dot(axis);
+            return (sign < 0) ? -unsigned_angle : unsigned_angle;
+        }
+
+        V slerp(const V to, T weight) const 
+        {
+            T start_length_sq = length_squared();
+            T end_length_sq = to.length_squared();
+            if (start_length_sq == 0 || end_length_sq == 0) 
+                return lerp(to, weight);
+
+            V axis = cross(to);
+            T axis_length_sq = axis.length_squared();
+            if (axis_length_sq == 0) 
+                return lerp(to, weight);
+
+            axis /= gm_sqrt(axis_length_sq);
+            T start_length = gm_sqrt(start_length_sq);
+            T result_length = gm_lerp(start_length, gm_sqrt(end_length_sq), weight);
+            T angle = angle_to(to);
+            return rotated(axis, angle * weight) * (result_length / start_length);
+        }
+
+        V slide(const V normal) const => this - normal * dot(normal);
     }
 
-    V slerp(const V to, T weight) const 
-    {
-        T start_length_sq = length_squared();
-        T end_length_sq = to.length_squared();
-        if (start_length_sq == 0 || end_length_sq == 0) 
-            return lerp(to, weight);
-
-        V axis = cross(to);
-        T axis_length_sq = axis.length_squared();
-        if (axis_length_sq == 0) 
-            return lerp(to, weight);
-
-        axis /= gm_sqrt(axis_length_sq);
-        T start_length = gm_sqrt(start_length_sq);
-        T result_length = gm_lerp(start_length, gm_sqrt(end_length_sq), weight);
-        T angle = angle_to(to);
-        return rotated(axis, angle * weight) * (result_length / start_length);
-    }
-
-    V slide(const V normal) const => this - normal * dot(normal);
     V snapped(const(V) step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y),  gm_snapped(z, step.z));
     V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step));
-    
-
+ 
     // operators
     ref inout(T) opIndex(size_t n) inout return { assert(n < 3); switch (n) { case 0: return x; case 1: return y; default: return z; } }
 
@@ -563,29 +584,21 @@ pure nothrow @nogc @safe:
 
     V opBinary(string op)(const V v) const if (op == "*") => V(x * v.x  , y * v.y  , z * v.z  );
     V opBinary(string op)(T scale)   const if (op == "*") => V(x * scale, y * scale, z * scale);
-    V opBinary(string op)(int scale) const if (op == "*") => V(x * scale, y * scale, z * scale);
     V opBinary(string op)(const V v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  );
     V opBinary(string op)(T add)     const if (op == "+") => V(x + add  , y + add  , z + add  );
-    V opBinary(string op)(int add)   const if (op == "+") => V(x + add  , y + add  , z + add  );
     V opBinary(string op)(const V v) const if (op == "-") => V(x - v.x  , y - v.y  , z - v.z  );
-    V opBinary(string op)(T sub)     const if (op == "-") => V(x - add  , y - add  , z - add  );
-    V opBinary(string op)(int sub)   const if (op == "-") => V(x - add  , y - add  , z - add  );
+    V opBinary(string op)(T sub)     const if (op == "-") => V(x - sub  , y - sub  , z - sub  );
     V opBinary(string op)(const V v) const if (op == "/") => V(x / v.x  , y / v.y  , z / v.z  );
     V opBinary(string op)(T scale)   const if (op == "/") => V(x / scale, y / scale, z / scale);
-    V opBinary(string op)(int scale) const if (op == "/") => V(x / scale, y / scale, z / scale);
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
-    V opOpAssign(string op)(int scale) if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
     V opOpAssign(string op)(const V v) if (op == "+") { x += v.x;   y += v.y;   z += v.z;   return this; }
     V opOpAssign(string op)(T add)     if (op == "+") { x += add;   y += add;   z += add;   return this; }
-    V opOpAssign(string op)(int add)   if (op == "+") { x += add;   y += add;   z += add;   return this; }
     V opOpAssign(string op)(const V v) if (op == "-") { x -= v.x;   y -= v.y;   z -= v.z;   return this; }
-    V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y += sub;   z += sub;   return this; }
-    V opOpAssign(string op)(int sub)   if (op == "-") { x -= sub;   y += sub;   z += sub;   return this; }
+    V opOpAssign(string op)(T sub)     if (op == "-") { x -= sub;   y -= sub;   z -= sub;   return this; }
     V opOpAssign(string op)(const V v) if (op == "/") { x /= v.x;   y /= v.y;   z /= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "/") { x /= scale; y /= scale; z /= scale; return this; }
-    V opOpAssign(string op)(int scale) if (op == "/") { x /= scale; y /= scale; z /= scale; return this; }
     
     V opUnary(string op)() const if (op == "+") => this;
     V opUnary(string op)() const if (op == "-") => V(-x, -y, -z);
