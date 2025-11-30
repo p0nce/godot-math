@@ -1,8 +1,0 @@
-{
-    "name": "godot-math",    
-
-    "dependencies":
-    {
-        "numem": "~>1.0"
-    }
-} 

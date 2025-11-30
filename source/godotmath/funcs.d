@@ -279,6 +279,24 @@ double gm_lerp(double from, double to, double weight)
     return from + (to - from) * weight;
 }
 
+double gm_snapped(double value, double step) 
+{
+    // BUG: floor(x + 0.5) not exactly the same as round
+    // will hardly be met in practice
+	if (step != 0) 
+    {
+		value = gm_floor(value / step + 0.5) * step;
+	}
+	return value;
+}
+
+int gm_snapped(int value, int step) 
+{
+    // Strangely enough, Godot doesn't do anything special for integers,
+    // it doesn't use a correct integer rounding.
+    return cast(int) gm_snapped(value, step);
+}
+
 private:
 
 private auto assumePureNothrowNogc(T, Args...)(T expr, auto ref Args args) pure nothrow @nogc @trusted if (isSomeFunction!T) {

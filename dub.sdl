@@ -1,0 +1,21 @@
+name "godot-math"
+description "Partial Port of Godot Math"
+copyright "Copyright 2025, Guillaume Piolat"
+authors "Guillaume Piolat"
+license "MIT"
+targetPath "out/"
+
+dependency "numem" version="~>1.4"
+
+toolchainRequirements ldc=">=1.40.0" frontend=">=2.106"
+
+configuration "library" {
+    targetType "staticLibrary"
+}
+
+configuration "unittest" {
+    targetType "autodetect"
+    dependency "silly" version="~>1.1"
+    sourcePaths "source/" "tests/"
+    importPaths "source/" "tests/"
+}

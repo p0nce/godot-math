@@ -13,10 +13,11 @@ pure nothrow @nogc @safe:
 
 // Changes vs Godot
 // - in global scope, symbols get a gm_ prefix.
-// - .clampf and .clampi replaced by overloaded .clamp
+// - .clampf/.clampi replaced by overloaded .clamp
+// - .snappedf /.snappedi replaced by overloaded .snapped
+// - same for minf/mini/maxf/maxi => replaced bu min/max
 
 // TODO
-// - finish vector 2 with snapped
 // - finish vector 3 functions
 // - finish vector3i
 
@@ -222,6 +223,9 @@ pure nothrow @nogc @safe:
 	        return rotated(angle * weight) * (result_length / start_length);
         }
     }
+
+    V snapped(const V step) const => V(cast(T)gm_snapped(x, step.x), gm_snapped(y, step.y));
+    V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step));
 
     // operators
     ref inout(T) opIndex(size_t n) inout return { assert(n < 2); return n ? y : x; }
@@ -475,9 +479,9 @@ pure nothrow @nogc @safe:
     // Vector3 slerp(to: Vector3, weight: float) const 
 
 // Vector3 slide(n: Vector3) const
-// snapped
-// Vector3 snappedf(step: float) const 
 
+    V snapped(const(V) step) const => V(gm_snapped(x, step.x), gm_snapped(y, step.y),  gm_snapped(z, step.z));
+    V snapped(T step) const => V(gm_snapped(x, step), gm_snapped(y, step), gm_snapped(z, step));
     
 
     // operators
