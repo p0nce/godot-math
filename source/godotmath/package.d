@@ -47,8 +47,6 @@ enum : EulerOrder
 }
 
 
-// TODO: opBinaryRight
-
 // Implementation done for: 
 // - Vector2 => https://docs.godotengine.org/en/stable/classes/class_vector2.html
 // - Vector3 => https://docs.godotengine.org/en/stable/classes/class_vector3.html
