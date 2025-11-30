@@ -808,6 +808,18 @@ pure nothrow @nogc @safe:
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z) && (w == v.w);
 
+    U opCast(U)() const if (isVector4Impl!U)
+    {    
+        static if (is(U.Elem == float))
+            return U(cast(float)x, cast(float)y, cast(float)z, cast(float)w);
+        else static if (is(U.Elem == double))
+            return U(cast(double)x, cast(double)y, cast(double)z, cast(double)w);
+        else static if (is(U.Elem == int))
+            return U(cast(int)x, cast(int)y, cast(int)z, cast(int)w);
+        else
+            static assert(false);
+    }
+
     V opBinary(string op)(const V v) const if (op == "*") => V(x * v.x  , y * v.y  , z * v.z  , w * v.w  );
     V opBinary(string op)(T scale)   const if (op == "*") => V(x * scale, y * scale, z * scale, w * scale);
     V opBinary(string op)(const V v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
@@ -1001,3 +1013,4 @@ private:
 
 enum bool isVector2Impl(T) = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T) = is(T : Vector3Impl!U, U...);
+enum bool isVector4Impl(T) = is(T : Vector4Impl!U, U...);

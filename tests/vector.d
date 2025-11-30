@@ -30,6 +30,14 @@ unittest
     assert(cast(Vector2d)a2 != Vector2d.ZERO);
 }
 
+@("Vector casts")
+unittest 
+{
+    cast(Vector2) cast(Vector2i) cast(Vector2d) Vector2.ONE;
+    cast(Vector3) cast(Vector3i) cast(Vector3d) Vector3.ONE;
+    cast(Vector4) cast(Vector4i) cast(Vector4d) Vector4.ONE;
+}
+
 @("Vector arithmetics")
 unittest 
 {
