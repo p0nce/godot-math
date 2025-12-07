@@ -709,7 +709,7 @@ pure nothrow @nogc @safe:
 */
 /// See also: 
 struct Vector4Impl(T) 
-    if (is(T : float) || is(T : double))
+    if (is(T == int) || is(T == float) || is(T == double))
 {
 pure nothrow @nogc @safe:
 
@@ -718,7 +718,7 @@ pure nothrow @nogc @safe:
         alias V = Vector4Impl!T,
               V3 = Vector3Impl!T;
 
-        enum bool isFloat = (is(T : float) || is(T : double));
+        enum bool isFloat = (is(T == float) || is(T == double));
         static if (isFloat)
             alias F = T;
         else 
@@ -949,7 +949,7 @@ pure nothrow @nogc @safe:
       ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 */
 struct QuaternionImpl(T)
-    if (is(T : float) || is(T : double))
+    if (is(T == float) || is(T == double))
 {
 pure nothrow @nogc @safe:
 
@@ -1007,11 +1007,11 @@ pure nothrow @nogc @safe:
         normalize();
     }
 
-    this(const Vector3 axis, T angle)
+    this(const V3 axis, T angle)
     {
         assert(axis.is_normalized);
 
-        T d = p_axis.length();
+        T d = axis.length();
         if (d == 0) 
         {
             x = 0;
@@ -1021,17 +1021,21 @@ pure nothrow @nogc @safe:
         } 
         else 
         {
-            T sin_angle = gm_sin(p_angle * 0.5f);
-            T cos_angle = gm_sin(p_angle * 0.5f);
+            T sin_angle = gm_sin(angle * 0.5f);
+            T cos_angle = gm_cos(angle * 0.5f);
             T s = sin_angle / d;
-            x = p_axis.x * s;
-            y = p_axis.y * s;
-            z = p_axis.z * s;
+            x = axis.x * s;
+            y = axis.y * s;
+            z = axis.z * s;
             w = cos_angle;
         }
     }
 
-    this(BasisImpl!T from);
+    this(BasisImpl!T from)
+    {
+        // Note: original source has implicit conversion from Basis to Quaternion
+        this = from.get_quaternion();
+    }
 
     this(T x, T y, T z, T w)
     {
@@ -1041,26 +1045,93 @@ pure nothrow @nogc @safe:
         this.w = w;
     }
 
+    T angle_to(const Q to) const 
+    {
+        T d = dot(to);
+        // acos does clamping.
+        return gm_acos(d * d * 2 - 1);
+    }
     T dot(const Q q) const => x * q.x + y * q.y + z * q.z + w * q.w;
+    Q exp() const 
+    {
+        Q src = this;
+        V3 src_v = V3(src.x, src.y, src.z);
+        T theta = src_v.length();
+        src_v = src_v.normalized();
+        if (theta < GM_CMP_EPSILON || !src_v.is_normalized()) {
+            return Q(0, 0, 0, 1);
+        }
+        return Q(src_v, theta);
+    }
 
+    // This implementation uses YXZ convention (Z is the first rotation).
+    Q from_euler(const V3 euler) 
+    {
+        T half_a1 = euler.y * 0.5f;
+        T half_a2 = euler.x * 0.5f;
+        T half_a3 = euler.z * 0.5f;
+
+        T cos_a1 = gm_cos(half_a1);
+        T sin_a1 = gm_sin(half_a1);
+        T cos_a2 = gm_cos(half_a2);
+        T sin_a2 = gm_sin(half_a2);
+        T cos_a3 = gm_cos(half_a3);
+        T sin_a3 = gm_sin(half_a3);
+
+        return Q(sin_a1 * cos_a2 * sin_a3 + cos_a1 * sin_a2 * cos_a3,
+                 sin_a1 * cos_a2 * cos_a3 - cos_a1 * sin_a2 * sin_a3,
+                -sin_a1 * sin_a2 * cos_a3 + cos_a1 * cos_a2 * sin_a3,
+                 sin_a1 * sin_a2 * sin_a3 + cos_a1 * cos_a2 * cos_a3);
+    }
+
+    T get_angle() const => 2 * gm_acos(w);
+    V3 get_axis() const 
+    {
+        if (gm_abs(w) > 1 - GM_CMP_EPSILON) 
+        {
+            return V3(x, y, z);
+        }
+        T r = (cast(T)1) / gm_sqrt(1 - w * w);
+        return V3(x * r, y * r, z * r);
+    }
+
+    V3 get_euler(EulerOrder order) const 
+    {
+        assert(is_normalized());
+        return BasisImpl!T(this).get_euler(order);
+    }
+
+    Q inverse() const => -this;
+
+    bool is_equal_approx(const Q to) const => gm_is_equal_approx(x, to.x) && gm_is_equal_approx(y, to.y) && gm_is_equal_approx(z, to.z) && gm_is_equal_approx(w, to.w);
+    bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z) && gm_is_finite(w);
     bool is_normalized() const => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
 
     T length() const => gm_sqrt(length_squared());
     T length_squared() const => dot(this);
+    Q log() const
+    {
+        V3 src_v = get_axis() * get_angle();
+        return Q(src_v.x, src_v.y, src_v.z, 0);
+    }
 
     void normalize()
     {
         this /= length();
     }
 
+    Q normalized() const
+    {
+        Q r = this;
+        r.normalize();
+        return r;
+    }
+
     Q slerp(const Q to, T weight) const 
     {
         assert(is_normalized);
         assert(to.is_normalized);
-
-
-        Q to1;
-        
+        Q to1;        
 
         // calc cosine
         T cosom = dot(to);
@@ -1102,15 +1173,101 @@ pure nothrow @nogc @safe:
             scale0 * w + scale1 * to1.w);
     }
 
+    Q slerpni(const Q to, T weight) const 
+    {
+        assert(is_normalized() && to.is_normalized());
+        const Q from = this;
+
+        T dot = from.dot(to);
+
+        if (gm_abs(dot) > 0.9999f) 
+            return from;
+        
+        T theta = gm_acos(dot),
+           sinT = 1 / gm_sin(theta),
+           newFactor = gm_sin(weight * theta) * sinT,
+           invFactor = gm_sin((1 - weight) * theta) * sinT;
+
+        return Q(invFactor * from.x + newFactor * to.x,
+                 invFactor * from.y + newFactor * to.y,
+                 invFactor * from.z + newFactor * to.z,
+                 invFactor * from.w + newFactor * to.w);
+    }
+
+    Q spherical_cubic_interpolate(const Q b, const Q pre_a, const Q post_b, T weight) const
+    {
+        assert(is_normalized());
+        assert(b.is_normalized());
+
+        Q from_q = this;
+        Q pre_q = pre_a;
+        Q to_q = b;
+        Q post_q = post_b;
+
+        // Align flip phases.
+        from_q = BasisImpl!T(from_q).get_rotation_quaternion();
+        pre_q = BasisImpl!T(pre_q).get_rotation_quaternion();
+        to_q = BasisImpl!T(to_q).get_rotation_quaternion();
+        post_q = BasisImpl!T(post_q).get_rotation_quaternion();
+
+        // Flip quaternions to shortest path if necessary.
+        bool flip1 = gm_signbit(from_q.dot(pre_q));
+        pre_q = flip1 ? -pre_q : pre_q;
+        bool flip2 = gm_signbit(from_q.dot(to_q));
+        to_q = flip2 ? -to_q : to_q;
+        bool flip3 = flip2 ? to_q.dot(post_q) <= 0 : gm_signbit(to_q.dot(post_q));
+        post_q = flip3 ? -post_q : post_q;
+
+        // Calc by Expmap in from_q space.
+        Q ln_from = Q(0, 0, 0, 0);
+        Q ln_to = (from_q.inverse() * to_q).log();
+        Q ln_pre = (from_q.inverse() * pre_q).log();
+        Q ln_post = (from_q.inverse() * post_q).log();
+        Q ln = Q(0, 0, 0, 0);
+        ln.x = gm_cubic_interpolate(ln_from.x, ln_to.x, ln_pre.x, ln_post.x, weight);
+        ln.y = gm_cubic_interpolate(ln_from.y, ln_to.y, ln_pre.y, ln_post.y, weight);
+        ln.z = gm_cubic_interpolate(ln_from.z, ln_to.z, ln_pre.z, ln_post.z, weight);
+        Q q1 = from_q * ln.exp();
+
+        // Calc by Expmap in to_q space.
+        ln_from = (to_q.inverse() * from_q).log();
+        ln_to = Q(0, 0, 0, 0);
+        ln_pre = (to_q.inverse() * pre_q).log();
+        ln_post = (to_q.inverse() * post_q).log();
+        ln = Q(0, 0, 0, 0);
+        ln.x = gm_cubic_interpolate(ln_from.x, ln_to.x, ln_pre.x, ln_post.x, weight);
+        ln.y = gm_cubic_interpolate(ln_from.y, ln_to.y, ln_pre.y, ln_post.y, weight);
+        ln.z = gm_cubic_interpolate(ln_from.z, ln_to.z, ln_pre.z, ln_post.z, weight);
+        Q q2 = to_q * ln.exp();
+
+        // To cancel error made by Expmap ambiguity, do blending.
+        return q1.slerp(q2, weight);
+    }
 
     // operators
     Q opBinary(string op)(const Q v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
     Q opBinary(string op)(const Q v) const if (op == "-") => V(x - v.x  , y - v.y  , z - v.z  , w - v.w  );
-
+    Q opBinary(string op)(const Q v) const if (op == "*")
+    {
+        Q r = this;
+        r *= v;
+        return r;
+    }
     Q opOpAssign(string op)(const Q v) if (op == "+") { x += v.x;   y += v.y;   z += v.z;   w += v.w;   return this; }
     Q opOpAssign(string op)(const Q v) if (op == "-") { x -= v.x;   y -= v.y;   z -= v.z;   w -= v.w;   return this; }
     Q opOpAssign(string op)(T s) if (op == "*")       { x *= s;     y *= s;     z *= s;     w *= s;     return this; }
     Q opOpAssign(string op)(T s) if (op == "/") => this *= (1 / s);
+    Q opOpAssign(string op)(const Q v) if (op == "*") 
+    {
+        T xx = w * v.x + x * v.w + y * v.z - z * v.y;
+        T yy = w * v.y + y * v.w + z * v.x - x * v.z;
+        T zz = w * v.z + z * v.w + x * v.y - y * v.x;
+        w = w * v.w - x * v.x - y * v.y - z * v.z;
+        x = xx;
+        y = yy;
+        z = zz;
+        return this;
+    }
 
     Q opUnary(string op)() const if (op == "+") => this;    
     Q opUnary(string op)() const if (op == "-") => Q(-x, -y, -z, -w);
@@ -1443,8 +1600,57 @@ pure nothrow @nogc @safe:
         }
     }
 
+    Q get_quaternion() const 
+    {
+        assert(is_rotation());
 
-// TODO Quaternion get_rotation_quaternion() const
+        /* Allow getting a quaternion from an unnormalized transform */
+        B m = this;
+        T trace = m.rows[0][0] + m.rows[1][1] + m.rows[2][2];
+        T[4] temp;
+
+        if (trace > 0) 
+        {
+            T s = gm_sqrt(trace + 1);
+            temp[3] = (s * 0.5f);
+            s = 0.5f / s;
+            temp[0] = ((m.rows[2][1] - m.rows[1][2]) * s);
+            temp[1] = ((m.rows[0][2] - m.rows[2][0]) * s);
+            temp[2] = ((m.rows[1][0] - m.rows[0][1]) * s);
+        } 
+        else 
+        {
+            int i = m.rows[0][0] < m.rows[1][1]
+			 	 ? (m.rows[1][1] < m.rows[2][2] ? 2 : 1)
+				 : (m.rows[0][0] < m.rows[2][2] ? 2 : 0);
+            int j = (i + 1) % 3;
+            int k = (i + 2) % 3;
+
+            T s = gm_sqrt(m.rows[i][i] - m.rows[j][j] - m.rows[k][k] + 1);
+            temp[i] = s * 0.5f;
+            s = 0.5f / s;
+
+            temp[3] = (m.rows[k][j] - m.rows[j][k]) * s;
+            temp[j] = (m.rows[j][i] + m.rows[i][j]) * s;
+            temp[k] = (m.rows[k][i] + m.rows[i][k]) * s;
+        }
+        return Q(temp[0], temp[1], temp[2], temp[3]);
+    }
+
+    Q get_rotation_quaternion() const
+    {
+        // Assumes that the matrix can be decomposed into a proper rotation and scaling matrix as M = R.S,
+        // and returns the Euler angles corresponding to the rotation part, complementing get_scale().
+        // See the comment in get_scale() for further information.
+        B m = orthonormalized();
+        T det = m.determinant();
+        if (det < 0) 
+        {
+            // Ensure that the determinant is 1, such that result is a proper rotation matrix which can be represented by Euler angles.
+            m.scale(V3(-1, -1, -1));
+        }
+        return m.get_quaternion();
+    }
 
     private V3 get_column(int index) const => V3(rows[0][index], rows[1][index], rows[2][index]);
 
@@ -1527,6 +1733,7 @@ pure nothrow @nogc @safe:
             && gm_is_zero_approx(y.dot(z));
     }
 
+    bool is_rotation() const => is_conformal() && gm_is_equal_approx(determinant(), cast(T)1, cast(T)GM_UNIT_EPSILON);
     bool is_equal_approx(const B b) const => rows[0].is_equal_approx(b.rows[0]) && rows[1].is_equal_approx(b.rows[1]) && rows[2].is_equal_approx(b.rows[2]);
     bool is_finite() const => rows[0].is_finite() && rows[1].is_finite() && rows[2].is_finite();
 

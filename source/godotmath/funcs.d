@@ -267,6 +267,10 @@ double gm_round(double x) => libc.round(x); ///
 int    gm_sign(int v)    => (v > 0) ? 1 : (v < 0 ? -1 : 0); ///
 float  gm_sign(float v)  => (v > 0) ? 1.0f : (v < 0 ? -1.0f : 0.0f); ///
 double gm_sign(double v) => (v > 0) ? 1.0 : (v < 0 ? -1.0 : 0.0); ///
+
+bool gm_signbit(float num) => num < 0;
+bool gm_signbit(double num) => num < 0;
+
 float  gm_sin(float x)   => libc.sinf(x); ///
 double gm_sin(double x)  => libc.sin(x); ///
 
