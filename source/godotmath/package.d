@@ -957,6 +957,8 @@ pure nothrow @nogc @safe:
     alias V3 = Vector3Impl!T;
     alias Elem = T;
 
+    enum Q IDENTITY = Q.init;
+
     union 
     {
         struct 
@@ -1127,11 +1129,13 @@ pure nothrow @nogc @safe:
         return r;
     }
 
+    inout(T*) ptr() inout return => array.ptr;
+
     Q slerp(const Q to, T weight) const 
     {
         assert(is_normalized);
         assert(to.is_normalized);
-        Q to1;        
+        Q to1;
 
         // calc cosine
         T cosom = dot(to);
@@ -1244,7 +1248,58 @@ pure nothrow @nogc @safe:
         return q1.slerp(q2, weight);
     }
 
+    Q spherical_cubic_interpolate_in_time(const Q b, const Q pre_a, const Q post_b, T weight, T b_t, T pre_a_t, T post_b_t) const 
+    {
+        assert(is_normalized() && b.is_normalized());
+
+        Q from_q = this;
+        Q pre_q = pre_a;
+        Q to_q = b;
+        Q post_q = post_b;
+
+        // Align flip phases.
+        from_q = BasisImpl!T(from_q).get_rotation_quaternion();
+        pre_q = BasisImpl!T(pre_q).get_rotation_quaternion();
+        to_q = BasisImpl!T(to_q).get_rotation_quaternion();
+        post_q = BasisImpl!T(post_q).get_rotation_quaternion();
+
+        // Flip quaternions to shortest path if necessary.
+        bool flip1 = gm_signbit(from_q.dot(pre_q));
+        pre_q = flip1 ? -pre_q : pre_q;
+        bool flip2 = gm_signbit(from_q.dot(to_q));
+        to_q = flip2 ? -to_q : to_q;
+        bool flip3 = flip2 ? to_q.dot(post_q) <= 0 : gm_signbit(to_q.dot(post_q));
+        post_q = flip3 ? -post_q : post_q;
+
+        // Calc by Expmap in from_q space.
+        Q ln_from = Q(0, 0, 0, 0);
+        Q ln_to = (from_q.inverse() * to_q).log();
+        Q ln_pre = (from_q.inverse() * pre_q).log();
+        Q ln_post = (from_q.inverse() * post_q).log();
+        Q ln = Q(0, 0, 0, 0);
+        ln.x = gm_cubic_interpolate_in_time(ln_from.x, ln_to.x, ln_pre.x, ln_post.x, weight, b_t, pre_a_t, post_b_t);
+        ln.y = gm_cubic_interpolate_in_time(ln_from.y, ln_to.y, ln_pre.y, ln_post.y, weight, b_t, pre_a_t, post_b_t);
+        ln.z = gm_cubic_interpolate_in_time(ln_from.z, ln_to.z, ln_pre.z, ln_post.z, weight, b_t, pre_a_t, post_b_t);
+        Q q1 = from_q * ln.exp();
+
+        // Calc by Expmap in to_q space.
+        ln_from = (to_q.inverse() * from_q).log();
+        ln_to = Q(0, 0, 0, 0);
+        ln_pre = (to_q.inverse() * pre_q).log();
+        ln_post = (to_q.inverse() * post_q).log();
+        ln = Q(0, 0, 0, 0);
+        ln.x = gm_cubic_interpolate_in_time(ln_from.x, ln_to.x, ln_pre.x, ln_post.x, weight, b_t, pre_a_t, post_b_t);
+        ln.y = gm_cubic_interpolate_in_time(ln_from.y, ln_to.y, ln_pre.y, ln_post.y, weight, b_t, pre_a_t, post_b_t);
+        ln.z = gm_cubic_interpolate_in_time(ln_from.z, ln_to.z, ln_pre.z, ln_post.z, weight, b_t, pre_a_t, post_b_t);
+        Q q2 = to_q * ln.exp();
+
+        // To cancel error made by Expmap ambiguity, do blending.
+        return q1.slerp(q2, weight);
+    }
+
+
     // operators
+    ref inout(T) opIndex(size_t n) inout => array[n];
     Q opBinary(string op)(const Q v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
     Q opBinary(string op)(const Q v) const if (op == "-") => V(x - v.x  , y - v.y  , z - v.z  , w - v.w  );
     Q opBinary(string op)(const Q v) const if (op == "*")
@@ -1269,7 +1324,7 @@ pure nothrow @nogc @safe:
         return this;
     }
 
-    Q opUnary(string op)() const if (op == "+") => this;    
+    Q opUnary(string op)() const if (op == "+") => this;
     Q opUnary(string op)() const if (op == "-") => Q(-x, -y, -z, -w);
 }
 
@@ -1299,7 +1354,7 @@ pure nothrow @nogc @safe:
     alias Q = QuaternionImpl!T;
     alias Elem = T;
 
-    V3[3] rows = 
+    V3[3] rows =
     [
         V3(1, 0, 0),
         V3(0, 1, 0),
@@ -1318,8 +1373,8 @@ pure nothrow @nogc @safe:
         rows[2] = z;
     }
 
-    this(T xx, T xy, T xz, 
-         T yx, T yy, T yz, 
+    this(T xx, T xy, T xz,
+         T yx, T yy, T yz,
          T zx, T zy, T zz)
     {
         rows[0] = V3(xx, xy, xz);
@@ -1609,7 +1664,7 @@ pure nothrow @nogc @safe:
         T trace = m.rows[0][0] + m.rows[1][1] + m.rows[2][2];
         T[4] temp;
 
-        if (trace > 0) 
+        if (trace > 0)
         {
             T s = gm_sqrt(trace + 1);
             temp[3] = (s * 0.5f);
@@ -1618,11 +1673,11 @@ pure nothrow @nogc @safe:
             temp[1] = ((m.rows[0][2] - m.rows[2][0]) * s);
             temp[2] = ((m.rows[1][0] - m.rows[0][1]) * s);
         } 
-        else 
+        else
         {
             int i = m.rows[0][0] < m.rows[1][1]
-			 	 ? (m.rows[1][1] < m.rows[2][2] ? 2 : 1)
-				 : (m.rows[0][0] < m.rows[2][2] ? 2 : 0);
+                 ? (m.rows[1][1] < m.rows[2][2] ? 2 : 1)
+                 : (m.rows[0][0] < m.rows[2][2] ? 2 : 0);
             int j = (i + 1) % 3;
             int k = (i + 2) % 3;
 
@@ -1682,7 +1737,7 @@ pure nothrow @nogc @safe:
         return get_scale_abs() * det_sign;
     }
 
-    private V3 get_scale_abs() const 
+    private V3 get_scale_abs() const
     {
         return V3( V3(rows[0][0], rows[1][0], rows[2][0]).length(),
                    V3(rows[0][1], rows[1][1], rows[2][1]).length(),
@@ -1697,7 +1752,7 @@ pure nothrow @nogc @safe:
         return inv;
     }
 
-    void invert() 
+    void invert()
     {
         T cofac(int row1, int col1, int row2, int col2)
             => (rows[row1][col1] * rows[row2][col2] - rows[row1][col2] * rows[row2][col1]);
@@ -1726,10 +1781,10 @@ pure nothrow @nogc @safe:
         const V3 y = get_column(1);
         const V3 z = get_column(2);
         const T x_len_sq = x.length_squared();
-        return gm_is_equal_approx(x_len_sq, y.length_squared()) 
-            && gm_is_equal_approx(x_len_sq, z.length_squared()) 
-            && gm_is_zero_approx(x.dot(y)) 
-            && gm_is_zero_approx(x.dot(z)) 
+        return gm_is_equal_approx(x_len_sq, y.length_squared())
+            && gm_is_equal_approx(x_len_sq, z.length_squared())
+            && gm_is_zero_approx(x.dot(y))
+            && gm_is_zero_approx(x.dot(z))
             && gm_is_zero_approx(y.dot(z));
     }
 
@@ -1740,13 +1795,15 @@ pure nothrow @nogc @safe:
     static B looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front)
     {
         assert(!target.is_zero_approx());
-        assert(!up.is_zero_approx());        
+        assert(!up.is_zero_approx());
         V3 z = target.normalized();
-        if (!use_model_front) {
+        if (!use_model_front)
+        {
             z = -z;
         }
         V3 x = up.cross(z);
-        if (x.is_zero_approx()) {
+        if (x.is_zero_approx())
+        {
             //WARN_PRINT("Target and up vectors are colinear. This is not advised as it may cause unwanted rotation around local Z axis.");
             x = up.get_any_perpendicular(); // Vectors are almost parallel.
         }
@@ -1765,7 +1822,7 @@ pure nothrow @nogc @safe:
         return m;
     }
 
-    void orthonormalize() 
+    void orthonormalize()
     {
         // Gram-Schmidt Process
         V3 x = get_column(0);
@@ -1784,7 +1841,7 @@ pure nothrow @nogc @safe:
     void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
     B rotated(const V3 axis, T angle) const => B(axis, angle) * this;
 
-    void scale(const V3 scale) 
+    void scale(const V3 scale)
     {
         rows[0] *= scale.x;
         rows[1] *= scale.y;
@@ -1798,7 +1855,7 @@ pure nothrow @nogc @safe:
         return m;
     }
 
-    void scale_local(const V3 scale) 
+    void scale_local(const V3 scale)
     {
         rows[0] *= scale;
         rows[1] *= scale;
@@ -1823,8 +1880,8 @@ pure nothrow @nogc @safe:
         return b;
     }
 
-    private void set(T xx, T xy, T xz, 
-                     T yx, T yy, T yz, 
+    private void set(T xx, T xy, T xz,
+                     T yx, T yy, T yz,
                      T zx, T zy, T zz)
     {
         rows[0] = V3(xx, xy, xz);
@@ -1875,7 +1932,7 @@ pure nothrow @nogc @safe:
         set_column(2, z);
     }
 
-    void set_euler(const V3 euler, EulerOrder order) 
+    void set_euler(const V3 euler, EulerOrder order)
     {
         T c, s;
 
@@ -1891,7 +1948,7 @@ pure nothrow @nogc @safe:
         s = gm_sin(euler.z);
         B zmat = B(c, -s, 0, s, c, 0, 0, 0, 1);
 
-        switch (order) 
+        switch (order)
         {
             case GM_EULER_ORDER_XYZ: this = xmat * ymat * zmat; break;
             case GM_EULER_ORDER_XZY: this = xmat * zmat * ymat; break;
@@ -1899,12 +1956,12 @@ pure nothrow @nogc @safe:
             case GM_EULER_ORDER_YZX: this = ymat * zmat * xmat; break;
             case GM_EULER_ORDER_ZXY: this = zmat * xmat * ymat; break;
             case GM_EULER_ORDER_ZYX: this = zmat * ymat * xmat; break;
-            default: 
+            default:
                 assert(false);
         }
     }
 
-    private void set_quaternion(const Q q) 
+    private void set_quaternion(const Q q)
     {
         T d = q.length_squared();
         T s = 2.0f / d;
@@ -1942,7 +1999,7 @@ pure nothrow @nogc @safe:
     }
 
     U opCast(U)() const if (isBasisImpl!U)
-    {    
+    {
         static if (is(U.Elem == float))
         {
             alias VD = Vector3Impl!float;
