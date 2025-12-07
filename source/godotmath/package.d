@@ -7,7 +7,7 @@ module godotmath;
 
 public import godotmath.funcs;
 
-import numem.core.traits;
+//import numem.core.traits;
 
 pure nothrow @nogc @safe:
 
@@ -32,6 +32,9 @@ alias Vector4i = Vector4Impl!int;
 
 alias Basis    = BasisImpl!float;
 alias Basisd   = BasisImpl!double;
+
+alias Quaternion  = QuaternionImpl!float;
+alias Quaterniond = QuaternionImpl!double;
 
 
 // EulerOrder
@@ -75,7 +78,7 @@ pure nothrow @nogc @safe:
     {
         alias V = Vector2Impl!T;
         enum bool isInt = is(T == int);
-        enum bool isFloat = isFloatingPoint!T;
+        enum bool isFloat = is(T == float) || is(T == double);
         static if (isFloat)
             alias F = T;
         else 
@@ -126,12 +129,12 @@ pure nothrow @nogc @safe:
 
     static if (isFloat)
     {
-        V bezier_derivative(const V c1, const V c2, const V end, T p_t) const 
-           => V( gm_bezier_derivative(x, c1.x, c2.x, end.x, p_t), 
-                 gm_bezier_derivative(y, c1.y, c2.y, end.y, p_t) );
-        V bezier_interpolate(const V c1, const V c2, const V end, T p_t) const 
-            => V( gm_bezier_interpolate(x, c1.x, c2.x, end.x, p_t), 
-                  gm_bezier_interpolate(y, c1.y, c2.y, end.y, p_t) );
+        V bezier_derivative(const V c1, const V c2, const V end, T t) const 
+           => V( gm_bezier_derivative(x, c1.x, c2.x, end.x, t), 
+                 gm_bezier_derivative(y, c1.y, c2.y, end.y, t) );
+        V bezier_interpolate(const V c1, const V c2, const V end, T t) const 
+            => V( gm_bezier_interpolate(x, c1.x, c2.x, end.x, t), 
+                  gm_bezier_interpolate(y, c1.y, c2.y, end.y, t) );
         V bounce(const V normal) const => -reflect(normal);
         V ceil() => V(gm_ceil(x), gm_ceil(y));
     }
@@ -141,7 +144,7 @@ pure nothrow @nogc @safe:
     
     static if (isFloat)
     {
-        T cross(const V p_other) const => x * p_other.y - y * p_other.x;
+        T cross(const V other) const => x * other.y - y * other.x;
         V cubic_interpolate(const V b, const V pre_a, const V post_b, T weight) const
             => V( gm_cubic_interpolate(x, b.x, pre_a.x, post_b.x, weight),
                   gm_cubic_interpolate(y, b.y, pre_a.y, post_b.y, weight) );
@@ -241,16 +244,16 @@ pure nothrow @nogc @safe:
         V slerp(const V to, T weight) const 
         {
             T start_length_sq = length_squared();
-	        T end_length_sq = to.length_squared();
-	        if (start_length_sq == 0 || end_length_sq == 0) 
+            T end_length_sq = to.length_squared();
+            if (start_length_sq == 0 || end_length_sq == 0) 
             {
-		        // Zero length vectors have no angle, so the best we can do is either lerp or throw an error.
-		        return lerp(to, weight);
-	        }
-	        T start_length = gm_sqrt(start_length_sq);
-	        T result_length = gm_lerp(start_length, gm_sqrt(end_length_sq), weight);
-	        T angle = angle_to(to);
-	        return rotated(angle * weight) * (result_length / start_length);
+                // Zero length vectors have no angle, so the best we can do is either lerp or throw an error.
+                return lerp(to, weight);
+            }
+            T start_length = gm_sqrt(start_length_sq);
+            T result_length = gm_lerp(start_length, gm_sqrt(end_length_sq), weight);
+            T angle = angle_to(to);
+            return rotated(angle * weight) * (result_length / start_length);
         }
     }
 
@@ -345,7 +348,7 @@ pure nothrow @nogc @safe:
               V2 = Vector2Impl!T;
 
         enum bool isInt = is(T == int);
-        enum bool isFloat = isFloatingPoint!T;
+        enum bool isFloat = is(T == float) || is(T == double);
         static if (isFloat)        
             alias F = T;
         else 
@@ -432,6 +435,11 @@ pure nothrow @nogc @safe:
     {
         T dot(const V other) const => x * other.x + y * other.y + z * other.z;
         V floor() const => V(gm_floor(x), gm_floor(y), gm_floor(z));
+        V get_any_perpendicular()
+        {
+            assert(! is_zero_approx() );
+            return cross((gm_abs(x) <= gm_abs(y) && gm_abs(x) <= gm_abs(z)) ? V.RIGHT : V.UP).normalized();
+        }
         V inverse() const => V(1 / x, 1 / y, 1 / z);
         bool is_equal_approx(const V other) const
            => gm_is_equal_approx(x, other.x) && gm_is_equal_approx(y, other.y) && gm_is_equal_approx(z, other.z);
@@ -540,12 +548,12 @@ pure nothrow @nogc @safe:
             return o;
         }
     
-        BasisImpl!T outer(const V p_with) const 
+        BasisImpl!T outer(const V with_) const 
         {
             BasisImpl!T basis;
-            basis.rows[0] = V(x * p_with.x, x * p_with.y, x * p_with.z);
-            basis.rows[1] = V(y * p_with.x, y * p_with.y, y * p_with.z);
-            basis.rows[2] = V(z * p_with.x, z * p_with.y, z * p_with.z);
+            basis.rows[0] = V(x * with_.x, x * with_.y, x * with_.z);
+            basis.rows[1] = V(y * with_.x, y * with_.y, y * with_.z);
+            basis.rows[2] = V(z * with_.x, z * with_.y, z * with_.z);
             return basis;
         }
 
@@ -710,7 +718,7 @@ pure nothrow @nogc @safe:
         alias V = Vector4Impl!T,
               V3 = Vector3Impl!T;
 
-        enum bool isFloat = isFloatingPoint!T;
+        enum bool isFloat = (is(T : float) || is(T : double));
         static if (isFloat)
             alias F = T;
         else 
@@ -932,6 +940,188 @@ pure nothrow @nogc @safe:
 
 
 
+/*
+      ██████╗ ██╗   ██╗ █████╗ ████████╗███████╗██████╗ ███╗   ██╗██╗ ██████╗ ███╗   ██╗
+     ██╔═══██╗██║   ██║██╔══██╗╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██║██╔═══██╗████╗  ██║
+     ██║   ██║██║   ██║███████║   ██║   █████╗  ██████╔╝██╔██╗ ██║██║██║   ██║██╔██╗ ██║
+     ██║▄▄ ██║██║   ██║██╔══██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██║██║   ██║██║╚██╗██║
+     ╚██████╔╝╚██████╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚████║██║╚██████╔╝██║ ╚████║
+      ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+*/
+struct QuaternionImpl(T)
+    if (is(T : float) || is(T : double))
+{
+pure nothrow @nogc @safe:
+
+    alias Q = QuaternionImpl!T;
+    alias V3 = Vector3Impl!T;
+    alias Elem = T;
+
+    union 
+    {
+        struct 
+        {
+            T x = 0;
+            T y = 0;
+            T z = 0;
+            T w = 1;
+        }
+        T[4] array;
+    }
+
+    this(V3 arc_from, V3 arc_to) // shortest arc
+    {
+        alias v0 = arc_from;
+        alias v1 = arc_to;
+        assert(!v0.is_zero_approx() && !v1.is_zero_approx());
+
+        static if (is(T == double))
+            enum T ALMOST_ONE = 0.999999999999999;
+        else
+            enum T ALMOST_ONE = 0.99999975f;
+
+        V3 n0 = v0.normalized();
+        V3 n1 = v1.normalized();
+        T d = n0.dot(n1);
+        if (gm_abs(d) > ALMOST_ONE) 
+        {
+            if (d >= 0)
+                return; // Vectors are same.
+
+            V3 axis = n0.get_any_perpendicular();
+            x = axis.x;
+            y = axis.y;
+            z = axis.z;
+            w = 0;
+        } 
+        else 
+        {
+            V3 c = n0.cross(n1);
+            T s = gm_sqrt((1.0f + d) * 2.0f);
+            T rs = 1.0f / s;
+            x = c.x * rs;
+            y = c.y * rs;
+            z = c.z * rs;
+            w = s * 0.5f;
+        }
+        normalize();
+    }
+
+    this(const Vector3 axis, T angle)
+    {
+        assert(axis.is_normalized);
+
+        T d = p_axis.length();
+        if (d == 0) 
+        {
+            x = 0;
+            y = 0;
+            z = 0;
+            w = 0;
+        } 
+        else 
+        {
+            T sin_angle = gm_sin(p_angle * 0.5f);
+            T cos_angle = gm_sin(p_angle * 0.5f);
+            T s = sin_angle / d;
+            x = p_axis.x * s;
+            y = p_axis.y * s;
+            z = p_axis.z * s;
+            w = cos_angle;
+        }
+    }
+
+    this(BasisImpl!T from);
+
+    this(T x, T y, T z, T w)
+    {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+
+    T dot(const Q q) const => x * q.x + y * q.y + z * q.z + w * q.w;
+
+    bool is_normalized() const => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
+
+    T length() const => gm_sqrt(length_squared());
+    T length_squared() const => dot(this);
+
+    void normalize()
+    {
+        this /= length();
+    }
+
+    Q slerp(const Q to, T weight) const 
+    {
+        assert(is_normalized);
+        assert(to.is_normalized);
+
+
+        Q to1;
+        
+
+        // calc cosine
+        T cosom = dot(to);
+
+        // adjust signs (if necessary)
+        if (cosom < 0) 
+        {
+            cosom = -cosom;
+            to1 = -to;
+        } 
+        else 
+        {
+            to1 = to;
+        }
+
+        // calculate coefficients
+
+        T scale0, scale1;
+        if ((1 - cosom) > cast(T)GM_CMP_EPSILON) 
+        {
+            // standard case (slerp)
+            T omega = gm_acos(cosom);
+            T sinom = gm_sin(omega);
+            scale0 = gm_sin((1 - weight) * omega) / sinom;
+            scale1 = gm_sin(weight * omega) / sinom;
+        } 
+        else 
+        {
+            // "from" and "to" quaternions are very close
+            //  ... so we can do a linear interpolation
+            scale0 = 1 - weight;
+            scale1 = weight;
+        }
+        // calculate final values
+        return Q(
+            scale0 * x + scale1 * to1.x,
+            scale0 * y + scale1 * to1.y,
+            scale0 * z + scale1 * to1.z,
+            scale0 * w + scale1 * to1.w);
+    }
+
+
+    // operators
+    Q opBinary(string op)(const Q v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
+    Q opBinary(string op)(const Q v) const if (op == "-") => V(x - v.x  , y - v.y  , z - v.z  , w - v.w  );
+
+    Q opOpAssign(string op)(const Q v) if (op == "+") { x += v.x;   y += v.y;   z += v.z;   w += v.w;   return this; }
+    Q opOpAssign(string op)(const Q v) if (op == "-") { x -= v.x;   y -= v.y;   z -= v.z;   w -= v.w;   return this; }
+    Q opOpAssign(string op)(T s) if (op == "*")       { x *= s;     y *= s;     z *= s;     w *= s;     return this; }
+    Q opOpAssign(string op)(T s) if (op == "/") => this *= (1 / s);
+
+    Q opUnary(string op)() const if (op == "+") => this;    
+    Q opUnary(string op)() const if (op == "-") => Q(-x, -y, -z, -w);
+}
+
+
+
+
+
+
+
 
 
 
@@ -949,6 +1139,7 @@ pure nothrow @nogc @safe:
 
     alias V3 = Vector3Impl!T;
     alias B = BasisImpl!T;
+    alias Q = QuaternionImpl!T;
     alias Elem = T;
 
     V3[3] rows = 
@@ -978,6 +1169,8 @@ pure nothrow @nogc @safe:
         rows[1] = V3(yx, yy, yz);
         rows[2] = V3(zx, zy, zz);
     }
+
+    this(const Q quaternion) { set_quaternion(quaternion); }
 
     T determinant() const
     {
@@ -1248,12 +1441,12 @@ pure nothrow @nogc @safe:
         default:
             assert(0); // bad Euler order
         }
-
-        //return V.init;
     }
 
 
 // TODO Quaternion get_rotation_quaternion() const
+
+    private V3 get_column(int index) const => V3(rows[0][index], rows[1][index], rows[2][index]);
 
 
     // get_scale works with get_rotation, use get_scale_abs if you need to enforce positive signature.
@@ -1290,23 +1483,147 @@ pure nothrow @nogc @safe:
                    V3(rows[0][2], rows[1][2], rows[2][2]).length() );
     }
 
-/+
-Basis inverse() const
+    B inverse() const
+    {
+        B inv;
+        inv = this;
+        inv.invert();
+        return inv;
+    }
 
-bool is_conformal() const
-bool is_equal_approx(b: Basis) const
-bool is_finite() const
-static looking_at(target: Vector3, up: Vector3 = Vector3(0, 1, 0), use_model_front: bool = false) static
-orthonormalized() const
-+/
-    void rotate(const V3 axis, T p_angle) { this = rotated(axis, p_angle); }
+    void invert() 
+    {
+        T cofac(int row1, int col1, int row2, int col2)
+            => (rows[row1][col1] * rows[row2][col2] - rows[row1][col2] * rows[row2][col1]);
+
+        T[3] co = 
+        [
+            cofac(1, 1, 2, 2), cofac(1, 2, 2, 0), cofac(1, 0, 2, 1)
+        ];
+
+        T det = rows[0][0] * co[0] +
+                rows[0][1] * co[1] +
+                rows[0][2] * co[2];
+
+        assert(det != 0);
+
+        T s = 1.0 / det;
+
+        set(co[0] * s, cofac(0, 2, 2, 1) * s, cofac(0, 1, 1, 2) * s,
+            co[1] * s, cofac(0, 0, 2, 2) * s, cofac(0, 2, 1, 0) * s,
+            co[2] * s, cofac(0, 1, 2, 0) * s, cofac(0, 0, 1, 1) * s);
+    }
+
+    bool is_conformal() const
+    {
+        const V3 x = get_column(0);
+        const V3 y = get_column(1);
+        const V3 z = get_column(2);
+        const T x_len_sq = x.length_squared();
+        return gm_is_equal_approx(x_len_sq, y.length_squared()) 
+            && gm_is_equal_approx(x_len_sq, z.length_squared()) 
+            && gm_is_zero_approx(x.dot(y)) 
+            && gm_is_zero_approx(x.dot(z)) 
+            && gm_is_zero_approx(y.dot(z));
+    }
+
+    bool is_equal_approx(const B b) const => rows[0].is_equal_approx(b.rows[0]) && rows[1].is_equal_approx(b.rows[1]) && rows[2].is_equal_approx(b.rows[2]);
+    bool is_finite() const => rows[0].is_finite() && rows[1].is_finite() && rows[2].is_finite();
+
+    static B looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front)
+    {
+        assert(!target.is_zero_approx());
+        assert(!up.is_zero_approx());        
+        V3 z = target.normalized();
+        if (!use_model_front) {
+            z = -z;
+        }
+        V3 x = up.cross(z);
+        if (x.is_zero_approx()) {
+            //WARN_PRINT("Target and up vectors are colinear. This is not advised as it may cause unwanted rotation around local Z axis.");
+            x = up.get_any_perpendicular(); // Vectors are almost parallel.
+        }
+        x.normalize();
+        V3 y = z.cross(x);
+
+        B basis;
+        basis.set_columns(x, y, z);
+        return basis;
+    }
+
+    B orthonormalized() const
+    {
+        B m = this;
+        m.orthonormalize();
+        return m;
+    }
+
+    void orthonormalize() 
+    {
+        // Gram-Schmidt Process
+        V3 x = get_column(0);
+        V3 y = get_column(1);
+        V3 z = get_column(2);
+        x.normalize();
+        y = (y - x * (x.dot(y)));
+        y.normalize();
+        z = (z - x * (x.dot(z)) - y * (y.dot(z)));
+        z.normalize();
+        set_column(0, x);
+        set_column(1, y);
+        set_column(2, z);
+    }
+
+    void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
     B rotated(const V3 axis, T angle) const => B(axis, angle) * this;
-    
-/+
-scaled(scale: Vector3) const
-scaled_local(scale: Vector3) const
-slerp(to: Basis, weight: float) const
-+/
+
+    void scale(const V3 scale) 
+    {
+        rows[0] *= scale.x;
+        rows[1] *= scale.y;
+        rows[2] *= scale.z;
+    }
+
+    B scaled(const V3 scale) const
+    {
+        B m = this;
+        m.scale(scale);
+        return m;
+    }
+
+    void scale_local(const V3 scale) 
+    {
+        rows[0] *= scale;
+        rows[1] *= scale;
+        rows[2] *= scale;
+    }
+
+    B scaled_local(const V3 scale) const
+    {
+        B m = this;
+        m.scale_local(scale);
+        return m;
+    }
+
+    B slerp(B to, T weight) const
+    {
+        Q from = Q(this);
+        Q qto = Q(to);
+        B b = B(from.slerp(qto, weight));
+        b.rows[0] *= gm_lerp(rows[0].length(), to.rows[0].length(), weight);
+        b.rows[1] *= gm_lerp(rows[1].length(), to.rows[1].length(), weight);
+        b.rows[2] *= gm_lerp(rows[2].length(), to.rows[2].length(), weight);
+        return b;
+    }
+
+    private void set(T xx, T xy, T xz, 
+                     T yx, T yy, T yz, 
+                     T zx, T zy, T zz)
+    {
+        rows[0] = V3(xx, xy, xz);
+        rows[1] = V3(yx, yy, yz);
+        rows[2] = V3(zx, zy, zz);
+    }
 
     void set_axis_angle(const V3 axis, T angle)
     {
@@ -1335,6 +1652,20 @@ slerp(to: Basis, weight: float) const
         zyxs = axis.x * sine;
         rows[1][2] = xyzt - zyxs;
         rows[2][1] = xyzt + zyxs;
+    }
+
+    void set_column(int index, const V3 c)
+    {
+        rows[0][index] = c.x;
+        rows[1][index] = c.x;
+        rows[2][index] = c.x;
+    }
+
+    void set_columns(const V3 x, const V3 y, const V3 z)
+    {
+        set_column(0, x);
+        set_column(1, y);
+        set_column(2, z);
     }
 
     void set_euler(const V3 euler, EulerOrder order) 
@@ -1366,18 +1697,42 @@ slerp(to: Basis, weight: float) const
         }
     }
 
+    private void set_quaternion(const Q q) 
+    {
+        T d = q.length_squared();
+        T s = 2.0f / d;
+        T xs = q.x * s, ys = q.y * s, zs = q.z * s;
+        T wx = q.w * xs, wy = q.w * ys, wz = q.w * zs;
+        T xx = q.x * xs, xy = q.x * ys, xz = q.x * zs;
+        T yy = q.y * ys, yz = q.y * zs, zz = q.z * zs;
+        set(1.0f - (yy + zz), xy - wz, xz + wy,
+            xy + wz, 1.0f - (xx + zz), yz - wx,
+            xz - wy, yz + wx, 1.0f - (xx + yy));
+    }
+
     // transposed dot products
-	T tdotx(const V3 v) const =>
-		rows[0][0] * v[0] + rows[1][0] * v[1] + rows[2][0] * v[2];
+    T tdotx(const V3 v) const =>
+        rows[0][0] * v[0] + rows[1][0] * v[1] + rows[2][0] * v[2];
 
-	T tdoty(const V3 v) const =>
-		rows[0][1] * v[0] + rows[1][1] * v[1] + rows[2][1] * v[2];
+    T tdoty(const V3 v) const =>
+        rows[0][1] * v[0] + rows[1][1] * v[1] + rows[2][1] * v[2];
 
-	T tdotz(const V3 v) const =>
-		rows[0][2] * v[0] + rows[1][2] * v[1] + rows[2][2] * v[2];
+    T tdotz(const V3 v) const =>
+        rows[0][2] * v[0] + rows[1][2] * v[1] + rows[2][2] * v[2];
 
-    /+ transposed() const +/
+    void transpose() 
+    {
+        gm_swap!T(rows[0][1], rows[1][0]);
+        gm_swap!T(rows[0][2], rows[2][0]);
+        gm_swap!T(rows[1][2], rows[2][1]);
+    }
 
+    B transposed() const 
+    {
+        B tr = this;
+        tr.transpose();
+        return tr;
+    }
 
     U opCast(U)() const if (isBasisImpl!U)
     {    
@@ -1415,4 +1770,5 @@ private:
 enum bool isVector2Impl(T) = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T) = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T) = is(T : Vector4Impl!U, U...);
+enum bool isQuaternionImpl(T) = is(T : QuaternionImpl!U, U...);
 enum bool isBasisImpl(T)   = is(T : BasisImpl!U, U...);

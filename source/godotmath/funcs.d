@@ -34,6 +34,7 @@ enum double GM_E      = 2.7182818284590452353602874714;
 enum double GM_INF    = double.infinity;
 enum double GM_NaN    = double.nan;
 
+// PRECISE_MATH_CHECKS is considered defined in this translation
 enum double GM_CMP_EPSILON = 0.00001;
 enum double GM_CMP_EPSILON2 = (GM_CMP_EPSILON * GM_CMP_EPSILON);
 
@@ -289,6 +290,13 @@ int gm_snapped(int value, int step) ///
 
 float  gm_sqrt(float x)  => assumePureNothrowNogc(&libc.sqrtf, x); ///
 double gm_sqrt(double x) => assumePureNothrowNogc(&libc.sqrt, x); ///
+
+void gm_swap(T)(ref T a, ref T b)
+{
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
 
 private:
 

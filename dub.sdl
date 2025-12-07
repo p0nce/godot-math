@@ -19,3 +19,11 @@ configuration "unittest" {
     sourcePaths "source/" "tests/"
     importPaths "source/" "tests/"
 }
+
+configuration "unittest-preview" {
+    targetType "autodetect"
+    dependency "silly" version="~>1.1"
+    sourcePaths "source/" "tests/"
+    importPaths "source/" "tests/"
+    dflags "-preview=all"
+}
