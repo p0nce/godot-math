@@ -27,6 +27,9 @@ alias Vector2  = Vector2Impl!float;
 alias Vector2i = Vector2Impl!int;
 alias Vector2d = Vector2Impl!double;
 
+alias Size2    = Vector2;
+alias Point2   = Vector2;
+
 alias Vector3  = Vector3Impl!float;
 alias Vector3i = Vector3Impl!int;
 alias Vector3d = Vector3Impl!double;
@@ -35,12 +38,17 @@ alias Vector4  = Vector4Impl!float;
 alias Vector4i = Vector4Impl!int;
 alias Vector4d = Vector4Impl!double;
 
+alias Quaternion  = QuaternionImpl!float;
+alias Quaterniond = QuaternionImpl!double;
+
+// 2x3 matrix basically
+alias Transform2D  = Transform2DImpl!float;
+alias Transform2Dd = Transform2DImpl!double;
+
 // 3x3 matrix basically
 alias Basis    = BasisImpl!float;
 alias Basisd   = BasisImpl!double;
 
-alias Quaternion  = QuaternionImpl!float;
-alias Quaterniond = QuaternionImpl!double;
 
 
 // EulerOrder
@@ -111,6 +119,19 @@ float  gm_acos(float x)  @trusted => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureN
 double gm_acos(double x)  => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acos, x)); ///
 float  gm_acosh(float x)  => assumePureNothrowNogc(&libc.acoshf, x); ///
 double gm_acosh(double x) => assumePureNothrowNogc(&libc.acosh, x); ///
+
+float gm_angle_difference(float from, float to) 
+{
+    float difference = gm_fmod(to - from, cast(float)GM_TAU);
+    return gm_fmod(2.0f * difference, cast(float)GM_TAU) - difference;
+}
+
+double gm_angle_difference(double from, double to) 
+{
+    double difference = gm_fmod(to - from, GM_TAU);
+    return gm_fmod(2.0 * difference, GM_TAU) - difference;
+}
+
 float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asinf, x)); ///
 double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asin, x)); ///
 float  gm_asinh(float x)  => assumePureNothrowNogc(&libc.asinhf, x); ///
@@ -323,6 +344,9 @@ double gm_lerp(double from, double to, double weight) ///
 {
     return from + (to - from) * weight;
 }
+
+float gm_lerp_angle(float from, float to, float weight) => from + gm_angle_difference(from, to) * weight; ///
+double gm_lerp_angle(double from, double to, double weight) => from + gm_angle_difference(from, to) * weight; ///
 
 float  gm_round(float x)  => libc.roundf(x); ///
 double gm_round(double x) => libc.round(x); ///
@@ -1652,6 +1676,117 @@ pure nothrow @nogc @safe:
 
 
 /*
+    ████████╗██████╗  █████╗ ███╗   ██╗███████╗███████╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ 
+    ╚══██╔══╝██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔════╝██╔═══██╗██╔══██╗████╗ ████║╚════██╗██╔══██╗
+       ██║   ██████╔╝███████║██╔██╗ ██║███████╗█████╗  ██║   ██║██████╔╝██╔████╔██║ █████╔╝██║  ██║
+       ██║   ██╔══██╗██╔══██║██║╚██╗██║╚════██║██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██╔═══╝ ██║  ██║
+       ██║   ██║  ██║██║  ██║██║ ╚████║███████║██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║███████╗██████╔╝
+       ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═════╝ 
+*/
+struct Transform2DImpl(T)
+{
+pure nothrow @nogc @safe:
+    alias V2 = Vector2Impl!T;
+    alias Elem = T;
+    alias T2D = Transform2DImpl!T;
+
+    union
+    {
+        V2[3] columns = 
+        [
+            [ 1, 0 ],
+            [ 0, 1 ],
+            [ 0, 0 ],
+        ];
+
+        struct
+        {
+            V2 x;
+            V2 y;
+            V2 origin;
+        }
+    }
+
+    this(T rotation, V2 position)
+    {
+        T cr = gm_cos(rotation);
+        T sr = gm_sin(rotation);
+        columns[0][0] = cr;
+        columns[0][1] = sr;
+        columns[1][0] = -sr;
+        columns[1][1] = cr;
+        columns[2] = position;
+    }
+
+    this(T rotation, const V2 scale, T skew, const V2 position)
+    {
+        columns[0][0] = gm_cos(rotation) * scale.x;
+        columns[1][1] = gm_cos(rotation + skew) * scale.y;
+        columns[1][0] = -gm_sin(rotation + skew) * scale.y;
+        columns[0][1] = gm_sin(rotation) * scale.x;
+        columns[2] = position;
+    }
+
+    this(V2 xAxis, V2 yAxis, V2 originPos)
+    {
+        x = xAxis;
+        y = yAxis;
+        origin = originPos;
+    }
+
+    void affine_invert()
+    {
+        T det = determinant();
+        assert(det != 0);
+        T idet = 1.0f / det;
+
+        gm_swap(columns[0][0], columns[1][1]);
+        columns[0] *= V2(idet, -idet);
+        columns[1] *= V2(-idet, idet);
+        columns[2] = basis_xform(-columns[2]);
+    }
+
+    T2D affine_inverse() const
+    {
+        T2D r = this;
+        r.affine_invert();
+        return this;
+    }
+
+    V2 basis_xform(V2 v) const => V2(tdotx(v), tdoty(v));
+    V2 basis_xform_inv(V2 v) const => V2(x.dot(v), y.dot(v));
+
+    T determinant() const => x.x * y.y - x.y * y.x;
+    T tdotx(const V2 v) const => x.x * v.x + y.x * v.y;
+	T tdoty(const V2 v) const => x.y * v.x + y.y * v.y;
+    V2 get_origin() const => origin;
+    T get_rotation() const => gm_atan2(x.y, x.x); 
+    V2 get_scale() const
+    {
+        T det_sign = gm_sign(determinant());
+        return V2(x.length(), det_sign * y.length());
+    }
+    T get_skew() const => gm_acos(x.normalized().dot(gm_sign(determinant()) * y.normalized())) - cast(T)GM_PI * 0.5f;
+
+    T2D interpolate_with(T2D xform, T weight) const
+    {
+        return T2D(gm_lerp_angle(get_rotation(), xform.get_rotation(), weight),
+                   get_scale().lerp(xform.get_scale(), weight),
+                   gm_lerp_angle(get_skew(), xform.get_skew(), weight),
+                   get_origin().lerp(xform.get_origin(), weight));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+/*
     ██████╗  █████╗ ███████╗██╗███████╗
     ██╔══██╗██╔══██╗██╔════╝██║██╔════╝
     ██████╔╝███████║███████╗██║███████╗
@@ -2349,6 +2484,7 @@ enum bool isVector2Impl(T) = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T) = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T) = is(T : Vector4Impl!U, U...);
 enum bool isQuaternionImpl(T) = is(T : QuaternionImpl!U, U...);
+enum bool isTransform2DImpl(T)   = is(T : Transform2DImpl!U, U...);
 enum bool isBasisImpl(T)   = is(T : BasisImpl!U, U...);
 
 auto assumePureNothrowNogc(T, Args...)(T expr, auto ref Args args) pure nothrow @nogc @trusted if (isSomeFunction!T) {
