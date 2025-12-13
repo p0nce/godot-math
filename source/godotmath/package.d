@@ -500,7 +500,7 @@ pure nothrow @nogc @safe:
         T dot(const V other) const => x * other.x + y * other.y;
         V floor() => V(gm_floor(x), gm_floor(y));
         static V from_angle(T angle) => V( gm_cos(angle), gm_sin(angle) );
-        bool is_equal_approx(const V other) => gm_is_equal_approx(x, other.x) && gm_is_equal_approx(y, other.y);
+        bool is_equal_approx(const V other) const => gm_is_equal_approx(x, other.x) && gm_is_equal_approx(y, other.y);
         bool is_finite() const => gm_is_finite(x) && gm_is_finite(y);
         bool is_normalized() const => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
         bool is_zero_approx() const => gm_is_zero_approx(x) && gm_is_zero_approx(y);
@@ -1774,6 +1774,139 @@ pure nothrow @nogc @safe:
                    get_scale().lerp(xform.get_scale(), weight),
                    gm_lerp_angle(get_skew(), xform.get_skew(), weight),
                    get_origin().lerp(xform.get_origin(), weight));
+    }
+
+    void invert()
+    {
+        // FIXME: this function assumes the basis is a rotation matrix, with no scaling.
+        // Transform2D::affine_inverse can handle matrices with scaling, so GDScript should eventually use that.
+        gm_swap(x.y, y.x);
+        origin = basis_xform(-origin);
+    }
+
+    T2D inverse() const
+    {
+        T2D r = this;
+        r.invert();
+        return this;
+    }
+
+    bool is_conformal() const
+    {
+        if (gm_is_equal_approx(x.x, y.y) && gm_is_equal_approx(x.y, -y.x))
+            return true;
+
+        if (gm_is_equal_approx(x.x, -y.y) && gm_is_equal_approx(x.y, y.x))
+            return true;
+
+        return false;
+    }
+
+    bool is_equal_approx(const T2D transform) const 
+        => x.is_equal_approx(transform.x) && y.is_equal_approx(transform.y) && origin.is_equal_approx(transform.origin);
+
+    bool is_finite() const
+        => x.is_finite() && y.is_finite() && origin.is_finite();
+
+    T2D looking_at(V2 target) const
+    {
+        T2D r = T2D(get_rotation(), get_origin());
+        V2 tpos = affine_inverse().xform(target);
+        r.set_rotation(r.get_rotation() + (tpos * get_scale()).angle());
+        return r;
+    }
+
+    void orthonormalize()
+    {
+        // Gram-Schmidt Process
+        x.normalize();
+        y = y - x * x.dot(y);
+        y.normalize();
+    }
+
+    T2D orthonormalized() const
+    {
+        T2D r = this;
+        r.orthonormalize();
+        return this;
+    }
+
+    T2D rotated(float angle) const => T2D(angle, V2.ZERO) * this; /// Equivalent to left multiplication
+    T2D rotated_local(float angle) const => this * T2D(angle, V2.ZERO); /// Equivalent to right multiplication
+
+    private void set_rotation(T rotation) 
+    {
+        V2 scale = get_scale();
+        T cr = gm_cos(rotation);
+        T sr = gm_sin(rotation);
+        columns[0][0] = cr;
+        columns[0][1] = sr;
+        columns[1][0] = -sr;
+        columns[1][1] = cr;
+        set_scale(scale);
+    }
+
+    void set_scale(const V2 scale) 
+    {
+        columns[0].normalize();
+        columns[1].normalize();
+        columns[0] *= scale.x;
+        columns[1] *= scale.y;
+    }
+    
+    void scale(const V2 v)
+    {
+        scale_basis(v);
+        origin *= v;
+    }
+
+    private void scale_basis(const V2 scale) 
+    {
+        x.x *= scale.x;
+        x.y *= scale.y;
+        y.x *= scale.x;
+        y.y *= scale.y;
+    }
+
+    T2D scaled(const V2 scale) const
+    {
+        T2D copy = this;
+        copy.scale(scale);
+        return copy;
+    }
+
+    T2D scaled_local(const V2 scale) const => T2D(x * scale.x, y * scale.y, origin);
+
+    T2D translated(const V2 offset) const => T2D(x, y, origin + offset);
+    T2D translated_local(const V2 offset) const => T2D(x, y, origin + basis_xform(offset));
+
+    V2 xform(const V2 vec) const => V2(tdotx(vec), tdoty(vec)) + origin;
+    V2 xform_inv(const V2 vec) const
+    {
+        V2 v = vec - origin;
+        return V2(x.dot(x), y.dot(v));
+    }
+
+    // operators
+    T2D opBinary(string op)(const T2D transform) const if (op == "*")
+    {
+        T2D t = this;
+        t *= transform;
+        return t;
+    }
+
+    T2D opOpAssign(string op)(const T2D transform) if (op == "*") 
+    {
+        origin = xform(transform.origin);
+        T x0 = tdotx(transform.x);
+        T x1 = tdoty(transform.x);
+        T y0 = tdotx(transform.y);
+        T y1 = tdoty(transform.y);
+        x.x = x0;
+        x.y = x1;
+        y.x = y0;
+        y.y = y1;
+        return this;
     }
 }
 
