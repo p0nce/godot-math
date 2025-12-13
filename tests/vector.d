@@ -30,7 +30,25 @@ unittest
     Vector2 d = arr2;
     assert(a2 == c);
     assert(cast(Vector2d)a2 != Vector2d.ZERO);
-}
+
+    assert(Vector2i(1, 1) != Vector2i(1, 3));
+    assert(Vector2(1, 2) < Vector2(2, 1));
+    assert(Vector2(2, 1) > Vector2(2, 0));
+    assert(Vector2(2, 1) > Vector2(1, 0));
+    assert(Vector2d(1, 2) <= Vector2d(1, 2));
+
+    assert(Vector3i(1, 1, 1) != Vector3i(1, 3, 1));
+    assert(Vector3(1, 2, 4) < Vector3(2, 1, 1));
+    assert(Vector3(2, 1, 1) > Vector3(2, 1, 0));
+    assert(Vector3(2, 1, 0) > Vector3(1, 4, 8));
+    assert(Vector3d(1, 2, 4) <= Vector3d(1, 2, 5));
+
+    assert(Vector4i(1, 1, 1, 0) != Vector4i(1, 3, 1, 0));
+    assert(Vector4(1, 2, 4, 0) < Vector4(2, 1, 1, 0));
+    assert(Vector4(2, 1, 1, 1) > Vector4(2, 1, 1, 0));
+    assert(Vector4(2, 1, 0, 0) > Vector4(1, 4, 8, 0));
+    assert(Vector4d(1, 2, 4, 0) <= Vector4d(1, 2, 5, 0));
+} 
 
     
 // More tests from GFM

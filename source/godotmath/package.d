@@ -98,7 +98,7 @@ this is a workaround, also provide float/double overloads.
 
 
 // Godot math constants
-// FUTURE: use the better constants from std.math, like PI with hex float precision**
+// TODO: use the better constants from std.math, like PI with hex float precision**
 // Phobos constants have more precision than Godot's ones.
 enum double GM_SQRT2  = 1.4142135623730950488016887242;
 enum double GM_SQRT3  = 1.7320508075688772935274463415059;
@@ -111,7 +111,7 @@ enum double GM_E      = 2.7182818284590452353602874714;
 enum double GM_INF    = double.infinity;
 enum double GM_NaN    = double.nan;
 
-// PRECISE_MATH_CHECKS is considered defined in this translation
+// PRECISE_MATH_CHECKS is considered defined in this D translation
 enum double GM_CMP_EPSILON = 0.00001;
 enum double GM_CMP_EPSILON2 = (GM_CMP_EPSILON * GM_CMP_EPSILON);
 
@@ -421,6 +421,7 @@ pure nothrow @nogc @safe:
     private
     {
         alias V = Vector2Impl!T;
+        
         enum bool isInt = is(T == int);
         enum bool isFloat = is(T == float) || is(T == double);
         static if (isFloat)
@@ -619,6 +620,21 @@ pure nothrow @nogc @safe:
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y);
 
+    int opCmp(V other) const 
+    {
+        if (x == other.x)
+        {
+            if (y == other.y) 
+                return 0;
+            else 
+                return y < other.y ? -1 : 1;
+        }
+        else
+        {
+            return x < other.x ? -1 : 1;
+        }
+    }
+
     U opCast(U)() const if (isVector2Impl!U)
     {    
         static if (is(U.Elem == float))
@@ -647,6 +663,9 @@ pure nothrow @nogc @safe:
     V opBinaryRight(string op)(T sub)   const if (op == "-") => V(sub - x  , sub - y  );
     V opBinaryRight(string op)(T scale) const if (op == "/") => V(scale / x, scale / y);
     V opBinaryRight(string op)(T mod)   const if (op == "%") => V(mod % x  , mod % y  );
+
+    static if (isFloat)
+        V opBinary(string op)(const Transform2DImpl!T transform) const if (op == "*") => transform.inverse() * this;
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; return this; }
@@ -990,6 +1009,24 @@ pure nothrow @nogc @safe:
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z);
 
+    int opCmp(V other) const 
+    {
+        if (x == other.x)
+        {
+            if (y == other.y)
+            {
+                if (z == other.z) 
+                    return 0;
+                else
+                    return z < other.z ? -1 : 1;
+            }            
+            else 
+                return y < other.y ? -1 : 1;
+        }
+        else
+            return x < other.x ? -1 : 1;
+    }
+
     U opCast(U)() const if (isVector3Impl!U)
     {
         static if (is(U.Elem == float))
@@ -1232,6 +1269,29 @@ pure nothrow @nogc @safe:
 
     bool opEquals(V v) const => (x == v.x) && (y == v.y) && (z == v.z) && (w == v.w);
 
+    int opCmp(V other) const 
+    {
+        if (x == other.x)
+        {
+            if (y == other.y)
+            {
+                if (z == other.z)
+                {
+                    if (w == other.w)
+                        return 0;
+                    else
+                        return w < other.w ? -1 : 1;
+                }
+                else
+                    return z < other.z ? -1 : 1;
+            }            
+            else 
+                return y < other.y ? -1 : 1;
+        }
+        else
+            return x < other.x ? -1 : 1;
+    }
+
     U opCast(U)() const if (isVector4Impl!U)
     {    
         static if (is(U.Elem == float))
@@ -1297,9 +1357,12 @@ struct QuaternionImpl(T)
 {
 pure nothrow @nogc @safe:
 
-    alias Q = QuaternionImpl!T;
-    alias V3 = Vector3Impl!T;
-    alias Elem = T;
+    private
+    {
+        alias Q = QuaternionImpl!T;
+        alias V3 = Vector3Impl!T;
+        alias Elem = T;
+    }
 
     enum Q IDENTITY = Q.init;
 
@@ -1690,11 +1753,16 @@ pure nothrow @nogc @safe:
        ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═════╝ 
 */
 struct Transform2DImpl(T)
+    if (is(T == float) || is(T == double))
 {
 pure nothrow @nogc @safe:
-    alias V2 = Vector2Impl!T;
-    alias Elem = T;
-    alias T2D = Transform2DImpl!T;
+
+    private
+    {
+        alias V2 = Vector2Impl!T;
+        alias Elem = T;
+        alias T2D = Transform2DImpl!T;
+    }
 
     union
     {
@@ -1844,7 +1912,7 @@ pure nothrow @nogc @safe:
     T2D rotated(float angle) const => T2D(angle, V2.ZERO) * this; /// Equivalent to left multiplication
     T2D rotated_local(float angle) const => this * T2D(angle, V2.ZERO); /// Equivalent to right multiplication
 
-    private void set_rotation(T rotation) 
+    void set_rotation(T rotation) 
     {
         V2 scale = get_scale();
         T cr = gm_cos(rotation);
@@ -1898,6 +1966,8 @@ pure nothrow @nogc @safe:
     }
 
     // operators
+    V2 opBinary(string op)(const V2 v) const if (op == "*") => xform(v);
+
     T2D opBinary(string op)(const T2D transform) const if (op == "*")
     {
         T2D t = this;
@@ -1941,10 +2011,13 @@ struct BasisImpl(T)
 {
 pure nothrow @nogc @safe:
 
-    alias V3 = Vector3Impl!T;
-    alias B = BasisImpl!T;
-    alias Q = QuaternionImpl!T;
-    alias Elem = T;
+    private
+    {
+        alias V3 = Vector3Impl!T;
+        alias B = BasisImpl!T;
+        alias Q = QuaternionImpl!T;
+        alias Elem = T;
+    }
 
     V3[3] rows =
     [

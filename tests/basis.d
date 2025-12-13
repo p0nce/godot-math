@@ -1,0 +1,47 @@
+module basis;
+
+import godotmath;
+
+pure nothrow @nogc @safe:
+
+@("Basis <=> Euler angles")
+unittest
+{
+    Vector3d angles = [0.1, 0.1, 0.1];
+    for (EulerOrder order = GM_EULER_ORDER_XYZ; order <= GM_EULER_ORDER_ZYX; ++order)
+    {
+        Basisd B = Basisd.from_euler(angles, order);
+        Vector3d angles2 = B.get_euler(order);
+        assert(angles.is_equal_approx(angles2));
+    }
+
+    Vector3 anglesf = [-0.1f, -0.1f, -0.1f];
+    for (EulerOrder order = GM_EULER_ORDER_XYZ; order <= GM_EULER_ORDER_ZYX; ++order)
+    {
+        Basis B = Basis.from_euler(anglesf, order);
+        Vector3 angles2 = B.get_euler(order);
+        assert(anglesf.is_equal_approx(angles2));
+    }
+}
+
+@("Basis scale")
+unittest
+{
+    Basis my_basis = Basis(
+        Vector3(2, 0, 0),
+        Vector3(0, 4, 0),
+        Vector3(0, 0, 8)
+    );
+    // Rotating the Basis in any way preserves its scale.
+    my_basis = my_basis.rotated(Vector3.UP, GM_TAU / 2);
+    my_basis = my_basis.rotated(Vector3.RIGHT, GM_TAU / 4);
+    assert(my_basis.get_scale().is_equal_approx( Vector3(2.0, 4.0, 8.0)));
+}
+
+@("Basis casts")
+unittest
+{
+    Basis B = Basis.from_scale(Vector3(1, 2, 1));
+    Basisd Bd = cast(Basisd)B;
+    Basis C = cast(Basis)Bd;
+}
