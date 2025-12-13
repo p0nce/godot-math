@@ -4,6 +4,33 @@ import godotmath;
 
 pure nothrow @nogc @safe:
 
+@("Basis * Vector3")
+unittest
+{
+    Basis B = Basis(Vector3(0, 2, 0),
+                    Vector3(2, 0, 0),
+                    Vector3(0, 0, -2));
+    assert(B.is_conformal());
+    Vector3 V = Vector3(1, 2, 3);
+    V = B * V;    
+    assert(V.is_equal_approx(Vector3(4, 2, -6)));
+}
+
+@("Vector3 * Basis")
+unittest
+{
+    Basis B = Basis(Vector3(0, 0, 1),
+                    Vector3(0, 1, 0),
+                    Vector3(-1, 0, 0));
+    assert(B.is_rotation());
+    assert(B.is_conformal());
+    Vector3 V = Vector3(4, 2, -6);
+    V = V * B;
+    assert(V.is_equal_approx(Vector3(-6, 2, -4)));
+    V = B * V;
+    assert(V.is_equal_approx(Vector3(4, 2, -6)));
+}
+
 @("Basis <=> Euler angles")
 unittest
 {

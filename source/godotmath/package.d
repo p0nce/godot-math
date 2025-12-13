@@ -21,7 +21,6 @@ pure nothrow @nogc @safe:
 //   Here when something is "float" it is actually `float` in the interface too,
 //   and same for `double`.
 
-// TODO all operators for Vector2
 // TODO all operators for Vector3
 // TODO all operators for Vector4
 // TODO all operators for Quaternion
@@ -1056,6 +1055,9 @@ pure nothrow @nogc @safe:
     V opBinaryRight(string op)(T scale) const if (op == "/") => V(scale / x, scale / y, scale / z);
     V opBinaryRight(string op)(T mod)   const if (op == "%") => V(mod % x  , mod % y  , mod % z  );
 
+    static if (isFloat)
+        V opBinary(string op)(const BasisImpl!T basis) const if (op == "*") => basis.transposed() * this;
+
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
     V opOpAssign(string op)(const V v) if (op == "+") { x += v.x;   y += v.y;   z += v.z;   return this; }
@@ -2008,6 +2010,7 @@ pure nothrow @nogc @safe:
     ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝╚══════╝
 */
 struct BasisImpl(T)
+    if (is(T == float) || is(T == double))
 {
 pure nothrow @nogc @safe:
 
@@ -2663,6 +2666,16 @@ pure nothrow @nogc @safe:
         return tr;
     }
 
+    V3 xform(const V3 vec) const => V3(tdotx(vec), tdoty(vec), tdotz(vec));
+    
+    V3 xform_inv(const V3 v) const
+    {
+        assert(is_conformal());
+        return V3((rows[0][0] * v.x) + (rows[1][0] * v.y) + (rows[2][0] * v.z),
+                  (rows[0][1] * v.x) + (rows[1][1] * v.y) + (rows[2][1] * v.z),
+                  (rows[0][2] * v.x) + (rows[1][2] * v.y) + (rows[2][2] * v.z));
+    }
+
     U opCast(U)() const if (isBasisImpl!U)
     {
         static if (is(U.Elem == float))
@@ -2681,16 +2694,14 @@ pure nothrow @nogc @safe:
 
     // operators
     V3 opIndex(size_t n) const => rows[n];
+
     B opBinary(string op)(const B m) const if (op == "*")
         => B(m.tdotx(rows[0]), m.tdoty(rows[0]), m.tdotz(rows[0]),
              m.tdotx(rows[1]), m.tdoty(rows[1]), m.tdotz(rows[1]),
              m.tdotx(rows[2]), m.tdoty(rows[2]), m.tdotz(rows[2]));
+
+    V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
 }
-
-
-
-
-
 
 // internal
 
