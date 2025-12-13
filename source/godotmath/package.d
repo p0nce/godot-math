@@ -21,46 +21,52 @@ pure nothrow @nogc @safe:
 //   Here when something is "float" it is actually `float` in the interface too,
 //   and same for `double`.
 
+// TODO all operators for Vector2
+// TODO all operators for Vector3
+// TODO all operators for Vector4
+// TODO all operators for Quaternion
+// TODO all operators for Transform2D
+// TODO all operators for Basis
 
 // Provide both float and double versions, should the need arise.
-alias Vector2  = Vector2Impl!float;
-alias Vector2i = Vector2Impl!int;
-alias Vector2d = Vector2Impl!double;
+alias Vector2  = Vector2Impl!float;  ///
+alias Vector2i = Vector2Impl!int;    ///
+alias Vector2d = Vector2Impl!double; ///
 
-alias Size2    = Vector2;
-alias Point2   = Vector2;
+alias Size2    = Vector2; ///
+alias Point2   = Vector2; ///
 
-alias Vector3  = Vector3Impl!float;
-alias Vector3i = Vector3Impl!int;
-alias Vector3d = Vector3Impl!double;
+alias Vector3  = Vector3Impl!float;  ///
+alias Vector3i = Vector3Impl!int;    ///
+alias Vector3d = Vector3Impl!double; ///
 
-alias Vector4  = Vector4Impl!float;
-alias Vector4i = Vector4Impl!int;
-alias Vector4d = Vector4Impl!double;
+alias Vector4  = Vector4Impl!float;  ///
+alias Vector4i = Vector4Impl!int;    ///
+alias Vector4d = Vector4Impl!double; ///
 
-alias Quaternion  = QuaternionImpl!float;
-alias Quaterniond = QuaternionImpl!double;
+alias Quaternion  = QuaternionImpl!float;  ///
+alias Quaterniond = QuaternionImpl!double; ///
 
 // 2x3 matrix basically
-alias Transform2D  = Transform2DImpl!float;
-alias Transform2Dd = Transform2DImpl!double;
+alias Transform2D  = Transform2DImpl!float;  ///
+alias Transform2Dd = Transform2DImpl!double; ///
 
 // 3x3 matrix basically
-alias Basis    = BasisImpl!float;
-alias Basisd   = BasisImpl!double;
+alias Basis    = BasisImpl!float;  ///
+alias Basisd   = BasisImpl!double; ///
 
 
 
 // EulerOrder
-alias EulerOrder = int;
+alias EulerOrder = int; ///
 enum : EulerOrder
 {
-    GM_EULER_ORDER_XYZ = 0,
-    GM_EULER_ORDER_XZY = 1,
-    GM_EULER_ORDER_YXZ = 2,
-    GM_EULER_ORDER_YZX = 3,
-    GM_EULER_ORDER_ZXY = 4,
-    GM_EULER_ORDER_ZYX = 5,
+    GM_EULER_ORDER_XYZ = 0, ///
+    GM_EULER_ORDER_XZY = 1, ///
+    GM_EULER_ORDER_YXZ = 2, ///
+    GM_EULER_ORDER_YZX = 3, ///
+    GM_EULER_ORDER_ZXY = 4, ///
+    GM_EULER_ORDER_ZYX = 5, ///
 }
 
 
@@ -1706,6 +1712,10 @@ pure nothrow @nogc @safe:
             V2 origin;
         }
     }
+
+    enum T2D IDENTITY = T2D(V2( 1, 0), V2(0,  1), V2(0, 0));
+    enum T2D FLIP_X   = T2D(V2(-1, 0), V2(0,  1), V2(0, 0));
+    enum T2D FLIP_Y   = T2D(V2( 1, 0), V2(0, -1), V2(0, 0));
 
     this(T rotation, V2 position)
     {
