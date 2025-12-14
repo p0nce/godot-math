@@ -23,7 +23,6 @@ pure nothrow @nogc @safe:
 
 // TODO all operators for Vector3
 // TODO all operators for Vector4
-// TODO all operators for Quaternion
 // TODO all operators for Transform2D
 // TODO all operators for Basis
 
@@ -1056,7 +1055,10 @@ pure nothrow @nogc @safe:
     V opBinaryRight(string op)(T mod)   const if (op == "%") => V(mod % x  , mod % y  , mod % z  );
 
     static if (isFloat)
+    {
         V opBinary(string op)(const BasisImpl!T basis) const if (op == "*") => basis.transposed() * this;
+        V opBinary(string op)(const QuaternionImpl!T quaternion) const if (op == "*") => quaternion.inverse() * this;
+    }
 
     V opOpAssign(string op)(const V v) if (op == "*") { x *= v.x;   y *= v.y;   z *= v.z;   return this; }
     V opOpAssign(string op)(T scale)   if (op == "*") { x *= scale; y *= scale; z *= scale; return this; }
@@ -1512,7 +1514,7 @@ pure nothrow @nogc @safe:
         return BasisImpl!T(this).get_euler(order);
     }
 
-    Q inverse() const => -this;
+    Q inverse() const => Q(x, y, z, -w);
 
     bool is_equal_approx(const Q to) const => gm_is_equal_approx(x, to.x) && gm_is_equal_approx(y, to.y) && gm_is_equal_approx(z, to.z) && gm_is_equal_approx(w, to.w);
     bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z) && gm_is_finite(w);
@@ -1706,21 +1708,35 @@ pure nothrow @nogc @safe:
         return q1.slerp(q2, weight);
     }
 
+    V3 xform(const V3 v) const 
+    {
+        assert(is_normalized());
+        V3 u = V3(x, y, z);
+        V3 uv = u.cross(v);
+        return v + ((uv * w) + u.cross(uv)) * 2;
+    }
+
+    V3 xform_inv(const V3 v) const => inverse().xform(v);
+
 
     // operators
-    ref inout(T) opIndex(size_t n) inout => array[n];
-    Q opBinary(string op)(const Q v) const if (op == "+") => V(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
-    Q opBinary(string op)(const Q v) const if (op == "-") => V(x - v.x  , y - v.y  , z - v.z  , w - v.w  );
+
     Q opBinary(string op)(const Q v) const if (op == "*")
     {
         Q r = this;
         r *= v;
         return r;
     }
+    V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
+    Q opBinary(string op)(T s) if (op == "*")             => Q(x * s, y * s, z * s, w * s);
+    Q opBinary(string op)(const Q v) const if (op == "+") => Q(x + v.x  , y + v.y  , z + v.z  , w + v.w  );
+    Q opBinary(string op)(const Q v) const if (op == "-") => Q(x - v.x  , y - v.y  , z - v.z  , w - v.w  );
+    Q opBinary(string op)(T s) const if (op == "/")       => Q(x / s, y / s, z / s, w / s);
+
     Q opOpAssign(string op)(const Q v) if (op == "+") { x += v.x;   y += v.y;   z += v.z;   w += v.w;   return this; }
     Q opOpAssign(string op)(const Q v) if (op == "-") { x -= v.x;   y -= v.y;   z -= v.z;   w -= v.w;   return this; }
     Q opOpAssign(string op)(T s) if (op == "*")       { x *= s;     y *= s;     z *= s;     w *= s;     return this; }
-    Q opOpAssign(string op)(T s) if (op == "/") => this *= (1 / s);
+    Q opOpAssign(string op)(T s) if (op == "/")           => this *= (1 / s);
     Q opOpAssign(string op)(const Q v) if (op == "*") 
     {
         T xx = w * v.x + x * v.w + y * v.z - z * v.y;
@@ -1733,6 +1749,7 @@ pure nothrow @nogc @safe:
         return this;
     }
 
+    ref inout(T) opIndex(size_t n) inout => array[n];
     Q opUnary(string op)() const if (op == "+") => this;
     Q opUnary(string op)() const if (op == "-") => Q(-x, -y, -z, -w);
 }
