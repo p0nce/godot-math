@@ -45,13 +45,17 @@ alias Vector4d = Vector4Impl!double; ///
 alias Quaternion  = QuaternionImpl!float;  ///
 alias Quaterniond = QuaternionImpl!double; ///
 
-// 2x3 matrix basically
+// 2x3 matrix
 alias Transform2D  = Transform2DImpl!float;  ///
 alias Transform2Dd = Transform2DImpl!double; ///
 
-// 3x3 matrix basically
+// 3x3 matrix
 alias Basis    = BasisImpl!float;  ///
 alias Basisd   = BasisImpl!double; ///
+
+// 3x4 matrix
+alias Transform3D  = Transform3DImpl!float;  ///
+alias Transform3Dd = Transform3DImpl!double; ///
 
 
 
@@ -2554,6 +2558,32 @@ pure nothrow @nogc @safe:
         return m;
     }
 
+    private void _set_diagonal(const V3 diag) 
+    {
+        rows[0][0] = diag.x;
+        rows[0][1] = 0;
+        rows[0][2] = 0;
+
+        rows[1][0] = 0;
+        rows[1][1] = diag.y;
+        rows[1][2] = 0;
+
+        rows[2][0] = 0;
+        rows[2][1] = 0;
+        rows[2][2] = diag.z;
+    }
+
+    private void set_quaternion_scale(const Q quaternion, const V3 scale) 
+    {
+        _set_diagonal(scale);
+        rotate(quaternion);
+    }
+
+    private void rotate(const Q quaternion)
+    {
+        this = B(quaternion) * this;
+    }
+
     B slerp(B to, T weight) const
     {
         Q from = Q(this);
@@ -2720,6 +2750,110 @@ pure nothrow @nogc @safe:
     V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
 }
 
+
+
+
+
+
+
+
+
+/*
+    ████████╗██████╗  █████╗ ███╗   ██╗███████╗███████╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ 
+    ╚══██╔══╝██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔════╝██╔═══██╗██╔══██╗████╗ ████║╚════██╗██╔══██╗
+       ██║   ██████╔╝███████║██╔██╗ ██║███████╗█████╗  ██║   ██║██████╔╝██╔████╔██║ █████╔╝██║  ██║
+       ██║   ██╔══██╗██╔══██║██║╚██╗██║╚════██║██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║ ╚═══██╗██║  ██║
+       ██║   ██║  ██║██║  ██║██║ ╚████║███████║██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝██████╔╝
+       ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═════╝ 
+*/
+struct Transform3DImpl(T)
+    if (is(T == float) || is(T == double))
+{
+pure nothrow @nogc @safe:
+
+    private
+    {
+        alias V3   = Vector3Impl!T;
+        alias B    = BasisImpl!T;
+        alias Q    = QuaternionImpl!T;
+        alias T3D  = Transform3DImpl!T;
+        alias Elem = T;
+    }
+
+    // Identity by default
+    B basis;
+    V3 origin;
+
+    enum T3D IDENTITY = T3D(V3(1, 0, 0), V3(0, 1, 0), V3(0, 0, 1), V3(0, 0, 0));
+    enum T3D FLIP_X = T3D(V3(-1, 0, 0), V3(0, 1, 0), V3(0, 0, 1), V3(0, 0, 0));
+    enum T3D FLIP_Y = T3D(V3(1, 0, 0), V3(0, -1, 0), V3(0, 0, 1), V3(0, 0, 0));
+    enum T3D FLIP_Z = T3D(V3(1, 0, 0), V3(0, 1, 0), V3(0, 0, -1), V3(0, 0, 0));
+
+    this(B basis, V3 origin)
+    {
+        this.basis = basis;
+        this.origin = origin;
+    }
+
+    // TODO this(Projection projection)
+
+    this(V3 x_axis, V3 y_axis, V3 z_axis, V3 origin)
+    {
+        basis = B(x_axis, y_axis, z_axis);
+        this.origin = origin;
+    }
+
+    void affine_invert() 
+    {
+        basis.invert();
+        origin = basis.xform(-origin);
+    }
+
+    T3D affine_inverse() const
+    {
+        T3D r = this;
+        r.affine_invert();
+        return r;
+    }
+
+    T3D interpolate_with(const T3D xform, T weight) const 
+    {
+        T3D interp;
+        V3 src_scale = basis.get_scale();
+        Q src_rot = basis.get_rotation_quaternion();
+        V3 src_loc = origin;
+        V3 dst_scale = xform.basis.get_scale();
+        Q dst_rot = xform.basis.get_rotation_quaternion();
+        V3 dst_loc = xform.origin;
+        interp.basis.set_quaternion_scale(src_rot.slerp(dst_rot, weight).normalized(), src_scale.lerp(dst_scale, weight));
+        interp.origin = src_loc.lerp(dst_loc, weight);
+        return interp;
+    }
+
+    void invert()
+    {
+        basis.transpose();
+        origin = basis.xform(-origin);
+    }
+
+    T3D inverse() const
+    {
+        T3D r = this;
+        r.invert();
+        return r;
+    }
+    bool is_equal_approx(T3D xform) const => basis.is_equal_approx(xform.basis) && origin.is_equal_approx(xform.origin);
+    bool is_finite() const => basis.is_finite() && origin.is_finite();
+    // TODO T3D looking_at(V3 target, V3 up = Vector3(0, 1, 0), bool use_model_front) const;
+    // TODO T3D orthonormalized() const;
+    // TODO T3D rotated(V3 axis, T angle) const;
+    // TODO T3D rotated_local(V3 axis, T angle) const;
+    // TODO T3D scaled(V3 scale) const;
+    // TODO T3D scaled_local(V3 scale) const;
+    // TODO T3D translated(V3 offset) const;
+    // TODO T3D translated_local(V3 offset) const;
+}
+
 // internal
 
 private:
@@ -2729,6 +2863,7 @@ enum bool isVector3Impl(T) = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T) = is(T : Vector4Impl!U, U...);
 enum bool isQuaternionImpl(T) = is(T : QuaternionImpl!U, U...);
 enum bool isTransform2DImpl(T)   = is(T : Transform2DImpl!U, U...);
+enum bool isTransform3DImpl(T)   = is(T : Transform3DImpl!U, U...);
 enum bool isBasisImpl(T)   = is(T : BasisImpl!U, U...);
 
 auto assumePureNothrowNogc(T, Args...)(T expr, auto ref Args args) pure nothrow @nogc @trusted if (isSomeFunction!T) {
