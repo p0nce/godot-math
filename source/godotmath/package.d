@@ -549,7 +549,7 @@ pure nothrow @nogc @safe:
             T len = vd.length();
             return len <= delta || len < cast(T)GM_CMP_EPSILON ? to : v + vd / len * delta;
         }
-        void normalize()
+        void normalize() // #BONUS
         {
             T l = x * x + y * y;
             if (l != 0) 
@@ -865,7 +865,7 @@ pure nothrow @nogc @safe:
             T len = vd.length();
             return len <= delta || len < cast(T)GM_CMP_EPSILON ? to : v + vd / len * delta;
         }
-        void normalize()
+        void normalize() // #BONUS
         {
             T l = x * x + y * y + z * z;
             if (l != 0)
@@ -1232,7 +1232,7 @@ pure nothrow @nogc @safe:
 
     static if (isFloat)
     {
-        void normalize()
+        void normalize() // #BONUS
         {
             T l = x * x + y * y + z * z + w * w;
             if (l != 0)
@@ -1532,7 +1532,7 @@ pure nothrow @nogc @safe:
         return Q(src_v.x, src_v.y, src_v.z, 0);
     }
 
-    void normalize()
+    void normalize() // #BONUS
     {
         this /= length();
     }
@@ -1712,7 +1712,7 @@ pure nothrow @nogc @safe:
         return q1.slerp(q2, weight);
     }
 
-    V3 xform(const V3 v) const 
+    private V3 xform(const V3 v) const 
     {
         assert(is_normalized());
         V3 u = V3(x, y, z);
@@ -1720,7 +1720,7 @@ pure nothrow @nogc @safe:
         return v + ((uv * w) + u.cross(uv)) * 2;
     }
 
-    V3 xform_inv(const V3 v) const => inverse().xform(v);
+    private V3 xform_inv(const V3 v) const => inverse().xform(v);
 
 
     // operators
@@ -1835,7 +1835,7 @@ pure nothrow @nogc @safe:
         origin = originPos;
     }
 
-    void affine_invert()
+    private void affine_invert()
     {
         T det = determinant();
         assert(det != 0);
@@ -1858,8 +1858,8 @@ pure nothrow @nogc @safe:
     V2 basis_xform_inv(V2 v) const => V2(x.dot(v), y.dot(v));
 
     T determinant() const => x.x * y.y - x.y * y.x;
-    T tdotx(const V2 v) const => x.x * v.x + y.x * v.y;
-	T tdoty(const V2 v) const => x.y * v.x + y.y * v.y;
+    private T tdotx(const V2 v) const => x.x * v.x + y.x * v.y;
+    private T tdoty(const V2 v) const => x.y * v.x + y.y * v.y;
     V2 get_origin() const => origin;
     T get_rotation() const => gm_atan2(x.y, x.x); 
     V2 get_scale() const
@@ -1877,7 +1877,7 @@ pure nothrow @nogc @safe:
                    get_origin().lerp(xform.get_origin(), weight));
     }
 
-    void invert()
+    private void invert()
     {
         // FIXME: this function assumes the basis is a rotation matrix, with no scaling.
         // Transform2D::affine_inverse can handle matrices with scaling, so GDScript should eventually use that.
@@ -1917,7 +1917,7 @@ pure nothrow @nogc @safe:
         return r;
     }
 
-    void orthonormalize()
+    private void orthonormalize()
     {
         // Gram-Schmidt Process
         x.normalize();
@@ -1935,7 +1935,7 @@ pure nothrow @nogc @safe:
     T2D rotated(float angle) const => T2D(angle, V2.ZERO) * this; /// Equivalent to left multiplication
     T2D rotated_local(float angle) const => this * T2D(angle, V2.ZERO); /// Equivalent to right multiplication
 
-    void set_rotation(T rotation) 
+    private void set_rotation(T rotation) 
     {
         V2 scale = get_scale();
         T cr = gm_cos(rotation);
@@ -1947,7 +1947,7 @@ pure nothrow @nogc @safe:
         set_scale(scale);
     }
 
-    void set_scale(const V2 scale) 
+    private void set_scale(const V2 scale) 
     {
         columns[0].normalize();
         columns[1].normalize();
@@ -1955,7 +1955,7 @@ pure nothrow @nogc @safe:
         columns[1] *= scale.y;
     }
     
-    void scale(const V2 v)
+    private void scale(const V2 v)
     {
         scale_basis(v);
         origin *= v;
@@ -2398,7 +2398,6 @@ pure nothrow @nogc @safe:
 
     private V3 get_column(int index) const => V3(rows[0][index], rows[1][index], rows[2][index]);
 
-
     // get_scale works with get_rotation, use get_scale_abs if you need to enforce positive signature.
     V3 get_scale() const 
     {
@@ -2441,7 +2440,7 @@ pure nothrow @nogc @safe:
         return inv;
     }
 
-    void invert()
+    private void invert()
     {
         T cofac(int row1, int col1, int row2, int col2)
             => (rows[row1][col1] * rows[row2][col2] - rows[row1][col2] * rows[row2][col1]);
@@ -2511,7 +2510,7 @@ pure nothrow @nogc @safe:
         return m;
     }
 
-    void orthonormalize()
+    private void orthonormalize()
     {
         // Gram-Schmidt Process
         V3 x = get_column(0);
@@ -2527,10 +2526,10 @@ pure nothrow @nogc @safe:
         set_column(2, z);
     }
 
-    void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
+    private void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
     B rotated(const V3 axis, T angle) const => B(axis, angle) * this;
 
-    void scale(const V3 scale)
+    private void scale(const V3 scale)
     {
         rows[0] *= scale.x;
         rows[1] *= scale.y;
@@ -2544,7 +2543,7 @@ pure nothrow @nogc @safe:
         return m;
     }
 
-    void scale_local(const V3 scale)
+    private void scale_local(const V3 scale)
     {
         rows[0] *= scale;
         rows[1] *= scale;
@@ -2604,7 +2603,7 @@ pure nothrow @nogc @safe:
         rows[2] = V3(zx, zy, zz);
     }
 
-    void set_axis_angle(const V3 axis, T angle)
+    private void set_axis_angle(const V3 axis, T angle)
     {
         // Rotation matrix from axis and angle, see https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_angle
         assert(axis.is_normalized());
@@ -2633,21 +2632,21 @@ pure nothrow @nogc @safe:
         rows[2][1] = xyzt + zyxs;
     }
 
-    void set_column(int index, const V3 c)
+    private void set_column(int index, const V3 c)
     {
         rows[0][index] = c.x;
         rows[1][index] = c.x;
         rows[2][index] = c.x;
     }
 
-    void set_columns(const V3 x, const V3 y, const V3 z)
+    private void set_columns(const V3 x, const V3 y, const V3 z)
     {
         set_column(0, x);
         set_column(1, y);
         set_column(2, z);
     }
 
-    void set_euler(const V3 euler, EulerOrder order)
+    private void set_euler(const V3 euler, EulerOrder order)
     {
         T c, s;
 
@@ -2699,7 +2698,7 @@ pure nothrow @nogc @safe:
     T tdotz(const V3 v) const =>
         rows[0][2] * v[0] + rows[1][2] * v[1] + rows[2][2] * v[2];
 
-    void transpose() 
+    private void transpose() 
     {
         gm_swap!T(rows[0][1], rows[1][0]);
         gm_swap!T(rows[0][2], rows[2][0]);
@@ -2803,7 +2802,7 @@ pure nothrow @nogc @safe:
         this.origin = origin;
     }
 
-    void affine_invert() 
+    private void affine_invert() 
     {
         basis.invert();
         origin = basis.xform(-origin);
@@ -2830,7 +2829,7 @@ pure nothrow @nogc @safe:
         return interp;
     }
 
-    void invert()
+    private void invert()
     {
         basis.transpose();
         origin = basis.xform(-origin);
@@ -2844,14 +2843,62 @@ pure nothrow @nogc @safe:
     }
     bool is_equal_approx(T3D xform) const => basis.is_equal_approx(xform.basis) && origin.is_equal_approx(xform.origin);
     bool is_finite() const => basis.is_finite() && origin.is_finite();
-    // TODO T3D looking_at(V3 target, V3 up = Vector3(0, 1, 0), bool use_model_front) const;
-    // TODO T3D orthonormalized() const;
-    // TODO T3D rotated(V3 axis, T angle) const;
-    // TODO T3D rotated_local(V3 axis, T angle) const;
-    // TODO T3D scaled(V3 scale) const;
-    // TODO T3D scaled_local(V3 scale) const;
-    // TODO T3D translated(V3 offset) const;
-    // TODO T3D translated_local(V3 offset) const;
+    
+    T3D looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front) const
+    {
+        assert(!origin.is_equal_approx(target));
+        T3D t = this;
+        t.basis = B.looking_at(target - origin, up, use_model_front);
+        return t;
+    }
+
+    private void orthonormalize()
+    {
+        basis.orthonormalize();
+    }
+    
+    T3D orthonormalized() const
+    {
+        T3D t = this;
+        t.orthonormalize();
+        return t;
+    }
+
+    private void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
+    T3D rotated(const V3 axis, T angle) const 
+    {
+        // Equivalent to left multiplication
+        B nbasis = B(axis, angle);
+        return T3D(nbasis * basis, nbasis.xform(origin));
+    }
+
+    T3D rotated_local(const V3 axis, T angle) const 
+    {
+        // Equivalent to right multiplication
+        B nbasis = B(axis, angle);
+        return T3D(basis * nbasis, origin);
+    }
+
+    private void scale(const V3 scale) 
+    {
+        basis.scale(scale);
+        origin *= scale;
+    }
+
+    T3D scaled(const V3 scale) const 
+    {
+        // Equivalent to left multiplication
+        return T3D(basis.scaled(scale), origin * scale);
+    }
+
+    T3D scaled_local(const V3 scale) const 
+    {
+        // Equivalent to right multiplication
+        return T3D(basis.scaled_local(scale), origin);
+    }
+
+    T3D translated(V3 offset) const => T3D(basis, origin + offset);
+    T3D translated_local(V3 offset) const => T3D(basis, origin + basis.xform(offset));
 }
 
 // internal
