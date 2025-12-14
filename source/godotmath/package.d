@@ -24,6 +24,7 @@ pure nothrow @nogc @safe:
 // TODO all operators for Vector3
 // TODO all operators for Vector4
 // TODO all operators for Transform2D
+// TODO all operators for Transform3D
 // TODO all operators for Basis
 
 // Provide both float and double versions, should the need arise.
