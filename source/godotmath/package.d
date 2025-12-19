@@ -58,6 +58,10 @@ alias Basisd   = BasisImpl!double; ///
 alias Transform3D  = Transform3DImpl!float;  ///
 alias Transform3Dd = Transform3DImpl!double; ///
 
+// 4x4 matrix
+alias Projection  = ProjectionImpl!float;  ///
+alias Projectiond = ProjectionImpl!double; ///
+
 
 
 // EulerOrder
@@ -72,6 +76,16 @@ enum : EulerOrder
     GM_EULER_ORDER_ZYX = 5, ///
 }
 
+alias Planes = int;
+enum : Planes
+{
+    GM_PLANE_NEAR   = 0,
+    GM_PLANE_FAR    = 1,
+    GM_PLANE_LEFT   = 2,
+    GM_PLANE_TOP    = 3,
+    GM_PLANE_RIGHT  = 4,
+    GM_PLANE_BOTTOM = 5
+}
 
 
 
@@ -2902,17 +2916,198 @@ pure nothrow @nogc @safe:
     T3D translated_local(V3 offset) const => T3D(basis, origin + basis.xform(offset));
 }
 
+
+
+
+
+
+
+
+
+
+/*
+    ██████╗ ██████╗  ██████╗      ██╗███████╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗
+    ██╔══██╗██╔══██╗██╔═══██╗     ██║██╔════╝██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║
+    ██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║        ██║   ██║██║   ██║██╔██╗ ██║
+    ██╔═══╝ ██╔══██╗██║   ██║██   ██║██╔══╝  ██║        ██║   ██║██║   ██║██║╚██╗██║
+    ██║     ██║  ██║╚██████╔╝╚█████╔╝███████╗╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║
+*/
+struct ProjectionImpl(T)
+    if (is(T == float) || is(T == double))
+{
+pure nothrow @nogc @safe:
+
+    private
+    {
+        alias V4   = Vector4Impl!T;
+        alias P    = ProjectionImpl!T;
+        alias T3D  = Transform3DImpl!T;
+        alias Elem = T;
+    }
+
+    // Identity by default
+    union
+    {
+        V4[4] columns = [V4(1, 0, 0, 0),
+                         V4(0, 1, 0, 0),
+                         V4(0, 0, 1, 0),
+                         V4(0, 0, 0, 1)];
+        struct
+        {
+            V4 x, y, z, w;
+        }
+
+        T[16] m; // added to avoid @trusted
+    }
+
+    enum P IDENTITY = P.init;
+    enum P ZERO = P(V4.ZERO, V4.ZERO, V4.ZERO, V4.ZERO);
+
+    this(V4 x, V4 y, V4 z, V4 w)
+    {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+
+    this(Transform3D tr)
+    {
+        m[0] = tr.basis.rows[0][0];
+        m[1] = tr.basis.rows[1][0];
+        m[2] = tr.basis.rows[2][0];
+        m[3] = 0.0;
+        m[4] = tr.basis.rows[0][1];
+        m[5] = tr.basis.rows[1][1];
+        m[6] = tr.basis.rows[2][1];
+        m[7] = 0.0;
+        m[8] = tr.basis.rows[0][2];
+        m[9] = tr.basis.rows[1][2];
+        m[10] = tr.basis.rows[2][2];
+        m[11] = 0.0;
+        m[12] = tr.origin.x;
+        m[13] = tr.origin.y;
+        m[14] = tr.origin.z;
+        m[15] = 1.0;
+    }
+
+    static P create_depth_correction(bool flip_y)
+    {
+        P p;
+        p.set_depth_correction(flip_y);
+        return p;
+    }
+
+    //TODO Projection create_fit_aabb(aabb: AABB) static
+
+    static P create_for_hmd(int eye, T aspect, T intraocular_dist, T display_width, T display_to_lens, T oversample, T z_near, T z_far)
+    {
+        P proj;
+        proj.set_for_hmd(eye, aspect, intraocular_dist, display_width, display_to_lens, oversample, z_near, z_far);
+        return proj;
+    }
+
+    static P create_frustum(T left, T right, T bottom, T top, T z_near, T z_far)
+    {
+        P proj;
+        proj.set_frustum(left, right, bottom, top, z_near, z_far);
+        return proj;
+    }
+
+    private void set_depth_correction(bool flip_y = true, bool reverse_z  =true, bool remap_z = true)
+    {
+        m[0] = 1;
+        m[1] = 0.0;
+        m[2] = 0.0;
+        m[3] = 0.0;
+        m[4] = 0.0;
+        m[5] = flip_y ? -1 : 1;
+        m[6] = 0.0;
+        m[7] = 0.0;
+        m[8] = 0.0;
+        m[9] = 0.0;
+        m[10] = remap_z ? (reverse_z ? -0.5 : 0.5) : (reverse_z ? -1.0 : 1.0);
+        m[11] = 0.0;
+        m[12] = 0.0;
+        m[13] = 0.0;
+        m[14] = remap_z ? 0.5 : 0.0;
+        m[15] = 1.0;
+    }
+
+    private void set_for_hmd(int eye, T aspect, T intraocular_dist, T display_width, T display_to_lens, T oversample, T z_near, T z_far) 
+    {
+        // we first calculate our base frustum on our values without taking our lens magnification into account.
+        T f1 = (intraocular_dist * 0.5) / display_to_lens;
+        T f2 = ((display_width - intraocular_dist) * 0.5) / display_to_lens;
+        T f3 = (display_width / 4.0) / display_to_lens;
+
+        // now we apply our oversample factor to increase our FOV. how much we oversample is always a balance we strike between performance and how much
+        // we're willing to sacrifice in FOV.
+        T add = ((f1 + f2) * (oversample - 1.0)) / 2.0;
+        f1 += add;
+        f2 += add;
+        f3 *= oversample;
+
+        // always apply KEEP_WIDTH aspect ratio
+        f3 /= aspect;
+
+        switch (eye) 
+        {
+        case 1:  // left eye
+            set_frustum(-f2 * z_near, f1 * z_near, -f3 * z_near, f3 * z_near, z_near, z_far);
+            break;
+        case 2:  // right eye
+            set_frustum(-f1 * z_near, f2 * z_near, -f3 * z_near, f3 * z_near, z_near, z_far);
+            break;
+        default:  // mono, does not apply here!
+            break;
+        }
+    }
+
+
+    private void set_frustum(T left, T right, T bottom, T top, T near, T far)
+    {
+        assert(right > left);
+        assert(top > bottom);
+        assert(far > near);
+        T x = 2 * near / (right - left);
+        T y = 2 * near / (top - bottom);
+        T a = (right + left) / (right - left);
+        T b = (top + bottom) / (top - bottom);
+        T c = -(far + near) / (far - near);
+        T d = -2 * far * near / (far - near);
+        m[0] = x;
+        m[1] = 0;
+        m[2] = 0;
+        m[3] = 0;
+        m[4] = 0;
+        m[5] = y;
+        m[6] = 0;
+        m[7] = 0;
+        m[8] = a;
+        m[9] = b;
+        m[10] = c;
+        m[11] = -1;
+        m[12] = 0;
+        m[13] = 0;
+        m[14] = d;
+        m[15] = 0;
+    }
+}
+
+
 // internal
 
 private:
 
-enum bool isVector2Impl(T) = is(T : Vector2Impl!U, U...);
-enum bool isVector3Impl(T) = is(T : Vector3Impl!U, U...);
-enum bool isVector4Impl(T) = is(T : Vector4Impl!U, U...);
-enum bool isQuaternionImpl(T) = is(T : QuaternionImpl!U, U...);
-enum bool isTransform2DImpl(T)   = is(T : Transform2DImpl!U, U...);
-enum bool isTransform3DImpl(T)   = is(T : Transform3DImpl!U, U...);
-enum bool isBasisImpl(T)   = is(T : BasisImpl!U, U...);
+enum bool isVector2Impl(T)     = is(T : Vector2Impl!U, U...);
+enum bool isVector3Impl(T)     = is(T : Vector3Impl!U, U...);
+enum bool isVector4Impl(T)     = is(T : Vector4Impl!U, U...);
+enum bool isQuaternionImpl(T)  = is(T : QuaternionImpl!U, U...);
+enum bool isTransform2DImpl(T) = is(T : Transform2DImpl!U, U...);
+enum bool isTransform3DImpl(T) = is(T : Transform3DImpl!U, U...);
+enum bool isBasisImpl(T)       = is(T : BasisImpl!U, U...);
+enum bool isProjectionImpl(T)  = is(T : ProjectionImpl!U, U...);
 
 auto assumePureNothrowNogc(T, Args...)(T expr, auto ref Args args) pure nothrow @nogc @trusted if (isSomeFunction!T) {
     static if (is(T Fptr : Fptr*) && is(Fptr == function))
