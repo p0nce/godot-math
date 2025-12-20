@@ -71,25 +71,21 @@ unittest
     auto forward = L.basis.xform(Vector3(0, 0, 1));
     assert(forward.is_equal_approx(Vector3(0, 0, -1)));
 }
-
++/
 
 @("Transform3D orthonormalized")
 unittest
 {
-    import godotmath : GM_PI;
-    // Start with a rotated transform, then scale it
-    auto T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 0), cast(float)(GM_PI / 6));
-    T = T.scaled(Vector3(2, 2, 2));
-    T.origin = Vector3(5, 5, 5);
-    
-    auto O = T.orthonormalized();
-    
+    Transform3D T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 0), cast(float)(GM_PI / 6));    
+    T = T.scaled(Vector3(2, 2, 2));    
+    T.origin = Vector3(5, 5, 5);    
+    Transform3D O = T.orthonormalized();
     // After orthonormalization, determinant should be 1
     assert(gm_is_equal_approx(O.basis.determinant(), 1.0f));
     // Origin preserved
     assert(O.origin.is_equal_approx(Vector3(5, 5, 5)));
 }
-+/
+
 
 @("Transform3D xform idempotence")
 unittest

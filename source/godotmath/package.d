@@ -2663,8 +2663,8 @@ pure nothrow @nogc @safe:
     private void set_column(int index, const V3 c)
     {
         rows[0][index] = c.x;
-        rows[1][index] = c.x;
-        rows[2][index] = c.x;
+        rows[1][index] = c.y;
+        rows[2][index] = c.z;
     }
 
     private void set_columns(const V3 x, const V3 y, const V3 z)
