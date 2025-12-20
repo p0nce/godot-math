@@ -11,7 +11,7 @@ unittest
     Transform3D T = Transform3D.IDENTITY;
     T.origin = Vector3(2, 9, 0);
     Transform3D R = T.rotated(Vector3(0, 0, 1), cast(float)(GM_PI / 2));
-    assert(R.origin.is_equal_approx(Vector3(9, -2, 0)));
+    assert(R.origin.is_equal_approx(Vector3(-9, 2, 0)));
 
     // rotated_local applies rotation in local space, origin unchanged
     T = Transform3D.IDENTITY;
@@ -33,8 +33,8 @@ unittest
 @("Transform3D affine_inverse")
 unittest
 {
-    Transform3D T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 2).normalized, 0.1);
-    T.origin = Vector3(4, 0, 0);
+    Transform3D T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 2).normalized, 0.7);
+    T.origin = Vector3(4, 2, 5);
     Transform3D invT = T.affine_inverse();
     assert( (T * invT).is_equal_approx(Transform3D.IDENTITY) );
     assert( (invT * T).is_equal_approx(Transform3D.IDENTITY) );

@@ -2740,7 +2740,7 @@ pure nothrow @nogc @safe:
         return tr;
     }
 
-    V3 xform(const V3 v) const => V3(tdotx(v), tdoty(v), tdotz(v));
+    V3 xform(const V3 v) const => V3(rows[0].dot(v), rows[1].dot(v), rows[2].dot(v));
     
     V3 xform_inv(const V3 v) const
     {
@@ -2838,12 +2838,8 @@ pure nothrow @nogc @safe:
 
     private void affine_invert() 
     {
+        basis.invert();        
         origin = basis.xform(-origin);
-        basis.invert();
-
-        // TODO report Godot bug
-        //basis.invert();        
-        //origin = basis.xform(-origin);
     }
 
     T3D affine_inverse() const

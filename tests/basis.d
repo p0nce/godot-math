@@ -12,7 +12,7 @@ unittest
                     Vector3(4, 0, -2));
     Vector3 V = Vector3(1, 2, 3);
     V = B * V;    
-    assert(V.is_equal_approx(Vector3(7, 5, -2)));
+    assert(V.is_equal_approx(Vector3(16, 2, -3)));
 }
 
 @("Vector3 * Basis")
@@ -25,7 +25,7 @@ unittest
     assert(B.is_conformal());
     Vector3 V = Vector3(4, 2, -6);
     V = V * B;
-    assert(V.is_equal_approx(Vector3(6, 2, 4)));
+    assert(V.is_equal_approx(Vector3(-6, 2, -4)));
     V = B * V;
     assert(V.is_equal_approx(Vector3(4, 2, -6)));
 }
