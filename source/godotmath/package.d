@@ -399,7 +399,7 @@ int gm_snapped(int value, int step) ///
 {
     // Strangely enough, Godot doesn't do anything special for integers,
     // it doesn't use a correct integer rounding.
-    return cast(int) gm_snapped(value, step);
+    return cast(int) gm_snapped(cast(double)value, cast(double)step);
 }
 
 float  gm_sqrt(float x)  => assumePureNothrowNogc(&libc.sqrtf, x); ///
@@ -1533,7 +1533,7 @@ pure nothrow @nogc @safe:
         return BasisImpl!T(this).get_euler(order);
     }
 
-    Q inverse() const => Q(x, y, z, -w);
+    Q inverse() const => Q(-x, -y, -z, w);
 
     bool is_equal_approx(const Q to) const => gm_is_equal_approx(x, to.x) && gm_is_equal_approx(y, to.y) && gm_is_equal_approx(z, to.z) && gm_is_equal_approx(w, to.w);
     bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z) && gm_is_finite(w);
@@ -2000,7 +2000,7 @@ pure nothrow @nogc @safe:
     V2 xform_inv(const V2 vec) const
     {
         V2 v = vec - origin;
-        return V2(x.dot(x), y.dot(v));
+        return V2(x.dot(v), y.dot(v));
     }
 
     // operators
@@ -2115,7 +2115,7 @@ pure nothrow @nogc @safe:
         return b;
     }
 
-    static B from_scale(const Vector3 scale)
+    static B from_scale(const V3 scale)
          => B(scale.x, 0, 0, 0, scale.y, 0, 0, 0, scale.z);
 
 
@@ -2508,7 +2508,7 @@ pure nothrow @nogc @safe:
     bool is_equal_approx(const B b) const => rows[0].is_equal_approx(b.rows[0]) && rows[1].is_equal_approx(b.rows[1]) && rows[2].is_equal_approx(b.rows[2]);
     bool is_finite() const => rows[0].is_finite() && rows[1].is_finite() && rows[2].is_finite();
 
-    static B looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front)
+    static B looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front = false)
     {
         assert(!target.is_zero_approx());
         assert(!up.is_zero_approx());
@@ -2755,12 +2755,12 @@ pure nothrow @nogc @safe:
         static if (is(U.Elem == float))
         {
             alias VD = Vector3Impl!float;
-            return U(cast(VD)rows[0], cast(VD)rows[1], cast(VD)rows[1]);
+            return U(cast(VD)rows[0], cast(VD)rows[1], cast(VD)rows[2]);
         }
         else static if (is(U.Elem == double))
         {
             alias VD = Vector3Impl!double;
-            return U(cast(VD)rows[0], cast(VD)rows[1], cast(VD)rows[1]);
+            return U(cast(VD)rows[0], cast(VD)rows[1], cast(VD)rows[2]);
         }
         else
             static assert(false);
@@ -2958,8 +2958,10 @@ pure nothrow @nogc @safe:
     V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
     T3D opBinary(string op)(const T fact) const if (op == "*")
     {
-        origin *= fact;
-        basis *= fact;
+        T3D r = this;
+        r.origin *= fact;
+        r.basis *= fact;
+        return r;
     }
 
     
