@@ -2058,12 +2058,19 @@ pure nothrow @nogc @safe:
         alias Elem = T;
     }
 
-    V3[3] rows =
-    [
-        V3(1, 0, 0),
-        V3(0, 1, 0),
-        V3(0, 0, 1)
-    ];
+    union
+    {
+        V3[3] rows =
+        [
+            V3(1, 0, 0),
+            V3(0, 1, 0),
+            V3(0, 0, 1)
+        ];
+    }
+
+    V3 x() const => get_column(0);
+    V3 y() const=> get_column(1);
+    V3 z() const=> get_column(2);
 
     enum B IDENTITY = B(V3( 1, 0, 0), V3(0,  1, 0), V3(0, 0,  1));
     enum B FLIP_X   = B(V3(-1, 0, 0), V3(0,  1, 0), V3(0, 0,  1));
@@ -2077,14 +2084,15 @@ pure nothrow @nogc @safe:
 
     this(V3 x, V3 y, V3 z)
     {
-        rows[0] = x;
-        rows[1] = y;
-        rows[2] = z;
+        rows[0] = V3(x.x, y.x, z.x);
+        rows[1] = V3(x.y, y.y, z.y);
+        rows[2] = V3(x.z, y.z, z.z);
     }
 
-    this(T xx, T xy, T xz,
-         T yx, T yy, T yz,
-         T zx, T zy, T zz)
+    
+    private this(T xx, T xy, T xz,
+                 T yx, T yy, T yz,
+                 T zx, T zy, T zz)
     {
         rows[0] = V3(xx, xy, xz);
         rows[1] = V3(yx, yy, yz);
@@ -2710,13 +2718,13 @@ pure nothrow @nogc @safe:
 
     // transposed dot products
     T tdotx(const V3 v) const =>
-        rows[0][0] * v[0] + rows[1][0] * v[1] + rows[2][0] * v[2];
+        rows[0][0] * v.x + rows[1][0] * v.y + rows[2][0] * v.z;
 
     T tdoty(const V3 v) const =>
-        rows[0][1] * v[0] + rows[1][1] * v[1] + rows[2][1] * v[2];
+        rows[0][1] * v.x + rows[1][1] * v.y + rows[2][1] * v.z;
 
     T tdotz(const V3 v) const =>
-        rows[0][2] * v[0] + rows[1][2] * v[1] + rows[2][2] * v[2];
+        rows[0][2] * v.x + rows[1][2] * v.y + rows[2][2] * v.z;
 
     private void transpose() 
     {
@@ -2732,7 +2740,7 @@ pure nothrow @nogc @safe:
         return tr;
     }
 
-    V3 xform(const V3 vec) const => V3(tdotx(vec), tdoty(vec), tdotz(vec));
+    V3 xform(const V3 v) const => V3(tdotx(v), tdoty(v), tdotz(v));
     
     V3 xform_inv(const V3 v) const
     {
@@ -2830,8 +2838,12 @@ pure nothrow @nogc @safe:
 
     private void affine_invert() 
     {
-        basis.invert();
         origin = basis.xform(-origin);
+        basis.invert();
+
+        // TODO report Godot bug
+        //basis.invert();        
+        //origin = basis.xform(-origin);
     }
 
     T3D affine_inverse() const
@@ -2857,6 +2869,10 @@ pure nothrow @nogc @safe:
 
     private void invert()
     {
+        // If the assertion fail:
+        // Transform3D.inverse() should be used on a rotation. Maybe use affine_inverse()?
+        assert(basis.is_rotation());
+
         basis.transpose();
         origin = basis.xform(-origin);
     }

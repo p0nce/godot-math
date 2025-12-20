@@ -7,13 +7,12 @@ pure nothrow @nogc @safe:
 @("Basis * Vector3")
 unittest
 {
-    Basis B = Basis(Vector3(0, 2, 0),
-                    Vector3(2, 0, 0),
-                    Vector3(0, 0, -2));
-    assert(B.is_conformal());
+    Basis B = Basis(Vector3(0, 2, 1),
+                    Vector3(2, 0, 1),
+                    Vector3(4, 0, -2));
     Vector3 V = Vector3(1, 2, 3);
     V = B * V;    
-    assert(V.is_equal_approx(Vector3(4, 2, -6)));
+    assert(V.is_equal_approx(Vector3(7, 5, -2)));
 }
 
 @("Vector3 * Basis")
@@ -26,7 +25,7 @@ unittest
     assert(B.is_conformal());
     Vector3 V = Vector3(4, 2, -6);
     V = V * B;
-    assert(V.is_equal_approx(Vector3(-6, 2, -4)));
+    assert(V.is_equal_approx(Vector3(6, 2, 4)));
     V = B * V;
     assert(V.is_equal_approx(Vector3(4, 2, -6)));
 }
@@ -63,6 +62,22 @@ unittest
     my_basis = my_basis.rotated(Vector3.UP, GM_TAU / 2);
     my_basis = my_basis.rotated(Vector3.RIGHT, GM_TAU / 4);
     assert(my_basis.get_scale().is_equal_approx( Vector3(2.0, 4.0, 8.0)));
+}
+
+@("Basis scaled")
+unittest
+{
+    Basis ma_base = Basis(
+        Vector3(1, 1, 1),
+        Vector3(2, 2, 2),
+        Vector3(3, 3, 3)
+    );
+    ma_base = ma_base.scaled(Vector3(0, 2, -2));
+    import std;
+    debug writeln(ma_base);
+    assert(ma_base.x.is_equal_approx(Vector3(0.0, 2.0, -2.0)));
+    assert(ma_base.y.is_equal_approx(Vector3(0.0, 4.0, -4.0)));
+    assert(ma_base.z.is_equal_approx(Vector3(0.0, 6.0, -6.0)));
 }
 
 @("Basis casts")
@@ -112,12 +127,3 @@ unittest
     assert((B * invB).is_equal_approx(Basis.IDENTITY));
     assert((invB * B).is_equal_approx(Basis.IDENTITY));
 }
-
-/*
-
-    Transform3D T = Transform3D(Basis.from_euler(Vector3(4, 5, 6)), Vector3(-10, 11, 12));//.scaled(Vector3(1.4, 1.2, 1.1));
-
-    Transform3D inv = T.affine_inverse();
-    assert( (inv * T).is_equal_approx(Transform3D.IDENTITY));
-    assert( (T * inv).is_equal_approx(Transform3D.IDENTITY));
-}*/

@@ -21,35 +21,25 @@ unittest
     assert(R.origin.is_equal_approx(Vector3(2, 9, 0)));
 }
 
-/+
 @("Transform3D inverse")
 unittest
 {
-    import godotmath : GM_PI;
-    auto T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 0), cast(float)(GM_PI / 4));
-    T.origin = Vector3(3, 4, 5);
-    
-    auto inv = T.inverse();
-    auto result = T.basis * inv.basis;
-    
-    // T.basis * T.inverse.basis should give identity basis
-    assert(result.is_equal_approx(Basis()));
+    Transform3D T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 0), cast(float)(GM_PI / 5));
+    Transform3D invT = T.inverse();
+    assert( (T * invT).is_equal_approx(Transform3D.IDENTITY) );
+    assert( (invT * T).is_equal_approx(Transform3D.IDENTITY) );
 }
-+/
 
-/+
 @("Transform3D affine_inverse")
-
 unittest
 {
-    Transform3D T = Transform3D(Basis.from_euler(Vector3(0, 0, 1)), Vector3(1,0,0));//.ZERO);
-    //Transform3D T = Transform3D.IDENTITY);/*Basis.from_euler(Vector3(4, 5, 6)),
-                         //       Vector3(-10, 11, 12)).scaled(Vector3(1.4, 1.2, 1.1));*/
-    Transform3D inv = T.affine_inverse();
-    assert( (inv * T).is_equal_approx(Transform3D.IDENTITY));
-    assert( (T * inv).is_equal_approx(Transform3D.IDENTITY));
+    Transform3D T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 2).normalized, 0.1);
+    T.origin = Vector3(4, 0, 0);
+    Transform3D invT = T.affine_inverse();
+    assert( (T * invT).is_equal_approx(Transform3D.IDENTITY) );
+    assert( (invT * T).is_equal_approx(Transform3D.IDENTITY) );
 }
-+/
+
 /+
 @("Transform3D interpolate_with")
 unittest
