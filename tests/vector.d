@@ -193,7 +193,51 @@ unittest
     assert(sd.is_equal_approx(Vector3d(-1, 1, 0).normalized));
 }
 
+@("Vector cubic_interpolate")
+unittest
+{
+    auto a = Vector2(0, 0);
+    auto r = a.cubic_interpolate(Vector2(10, 10), Vector2(-5, -5), Vector2(15, 15), 0.5);
+    assert(r.is_equal_approx(Vector2(5, 5)));
+}
 
+@("Vector bezier_interpolate")
+unittest
+{
+    auto a = Vector3(0, 0, 0);
+    auto r = a.bezier_interpolate(Vector3(1, 2, 1), Vector3(2, 4, 2), Vector3(3, 6, 3), 0.5);
+    assert(r.is_equal_approx(Vector3(1.5, 3, 1.5)));
+}
 
+@("Vector reflect")
+unittest
+{
+    auto v = Vector2(1, 1);
+    auto r = v.reflect(Vector2(0, 1));
+    assert(r.is_equal_approx(Vector2(-1, 1)));
+}
 
+@("Vector distance_to")
+unittest
+{
+    auto a = Vector3(0, 0, 0);
+    assert(a.distance_to(Vector3(3, 4, 0)) == 5.0f);
+}
+
+@("Vector snapped")
+unittest
+{
+    auto v = Vector4(1.7, 2.3, -4.9, -0.4);
+    auto r = v.snapped(1.0);
+    assert(r.is_equal_approx(Vector4(2, 2, -5, 0)));
+}
+
+@("Vector3 signed_angle_to")
+unittest
+{
+    import godotmath : GM_PI;
+    auto a = Vector3(1, 0, 0);
+    auto angle = a.signed_angle_to(Vector3(0, 1, 0), Vector3(0, 0, 1));
+    assert(gm_is_equal_approx(angle, cast(float)(GM_PI / 2)));
+}
 
