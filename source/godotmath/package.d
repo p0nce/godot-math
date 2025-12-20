@@ -1441,7 +1441,7 @@ pure nothrow @nogc @safe:
 
     this(const V3 axis, T angle)
     {
-        assert(axis.is_normalized);
+        assert(axis.is_normalized, "Quaternion axis must be normalized when constructed");
 
         T d = axis.length();
         if (d == 0) 
@@ -1497,7 +1497,7 @@ pure nothrow @nogc @safe:
     }
 
     // This implementation uses YXZ convention (Z is the first rotation).
-    Q from_euler(const V3 euler) 
+    static Q from_euler(const V3 euler) 
     {
         T half_a1 = euler.y * 0.5f;
         T half_a2 = euler.x * 0.5f;
@@ -1527,7 +1527,7 @@ pure nothrow @nogc @safe:
         return V3(x * r, y * r, z * r);
     }
 
-    V3 get_euler(EulerOrder order) const 
+    V3 get_euler(EulerOrder order = GM_EULER_ORDER_YXZ) const 
     {
         assert(is_normalized());
         return BasisImpl!T(this).get_euler(order);
