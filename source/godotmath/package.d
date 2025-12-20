@@ -159,6 +159,8 @@ float  gm_asin(float x)   => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assu
 double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assumePureNothrowNogc(&libc.asin, x)); ///
 float  gm_asinh(float x)  => assumePureNothrowNogc(&libc.asinhf, x); ///
 double gm_asinh(double x) => assumePureNothrowNogc(&libc.asinh, x); ///
+float  gm_atan(float x)   => libc.atanf(x); //assumePureNothrowNogc(&libc.atanf, x); ///
+double  gm_atan(double x)   => libc.atan(x); //assumePureNothrowNogc(&libc.atan, x); ///
 float  gm_atan2(float y, float x)   => assumePureNothrowNogc(&libc.atan2f, y, x); ///
 double gm_atan2(double y, double x) => assumePureNothrowNogc(&libc.atan2, y, x); ///
 
@@ -273,6 +275,9 @@ float gm_cubic_interpolate_in_time(float p_from, float p_to, float p_pre, float 
     return gm_lerp(b1, b2, p_to_t == 0 ? 0.5f : t / p_to_t);
 }
 
+float gm_deg_to_rad(float y) => y * (cast(float)GM_PI / 180.0f); ///
+double gm_deg_to_rad(double y) => y * (GM_PI / 180.0); ///
+
 float  gm_floor(float x)  => libc.floorf(x); ///
 double gm_floor(double x) => libc.floor(x); ///
 float gm_fmod(float x, float y) => assumePureNothrowNogc(&libc.fmodf, x, y); ///
@@ -371,6 +376,9 @@ double gm_lerp(double from, double to, double weight) ///
 float gm_lerp_angle(float from, float to, float weight) => from + gm_angle_difference(from, to) * weight; ///
 double gm_lerp_angle(double from, double to, double weight) => from + gm_angle_difference(from, to) * weight; ///
 
+float gm_rad_to_deg(float y) => y * (180.0f / cast(float)GM_PI); ///
+double gm_rad_to_deg(double y) => y * (180.0 / GM_PI); ///
+
 float  gm_round(float x)  => libc.roundf(x); ///
 double gm_round(double x) => libc.round(x); ///
 
@@ -412,6 +420,8 @@ void gm_swap(T)(ref T a, ref T b)
     b = tmp;
 }
 
+float gm_tan(float x)   => libc.tanf(x);
+double gm_tan(double x) => libc.tan(x);
 
 
 
@@ -3073,6 +3083,34 @@ pure nothrow @nogc @safe:
         return proj;
     }
 
+    //TODO static P create_light_atlas_rect(Rect2 rect)
+
+    static P create_orthogonal(T left, T right, T bottom, T top, T z_near, T z_far)
+    {
+        P proj;
+        proj.set_orthogonal(left, right, bottom, top, z_near, z_far);
+        return proj;
+    }
+
+    static P create_orthogonal_aspect(T size, T aspect, T z_near, T z_far, bool flip_fov) 
+    {
+        P proj;
+        proj.set_orthogonal(size, aspect, z_near, z_far, flip_fov);
+        return proj;
+    }
+
+    static P create_perspective(T fovy, T aspect, T z_near, T z_far, bool flip_fov = false)
+    {
+        P proj;
+        proj.set_perspective(fovy, aspect, z_near, z_far, flip_fov);
+        return proj;
+    }
+
+    static T get_fovy(T fovx, T aspect) 
+    {
+        return gm_rad_to_deg(gm_atan(aspect * gm_tan(gm_deg_to_rad(fovx) * 0.5f)) * 2.0f);
+    }
+
     private void set_depth_correction(bool flip_y = true, bool reverse_z  =true, bool remap_z = true)
     {
         m[0] = 1;
@@ -3158,6 +3196,121 @@ pure nothrow @nogc @safe:
         if (!flip_fov)
             size *= aspect;
         set_frustum(-size / 2 + offset.x, +size / 2 + offset.x, -size / aspect / 2 + offset.y, size / aspect / 2 + offset.y, near, far);
+    }
+
+    private void set_identity() 
+    {
+        this = P.init;
+    }
+
+    private void set_orthogonal(T left, T right, T bottom, T top, T znear, T zfar) 
+    {
+        set_identity();
+        columns[0][0] = 2.0 / (right - left);
+        columns[3][0] = -((right + left) / (right - left));
+        columns[1][1] = 2.0 / (top - bottom);
+        columns[3][1] = -((top + bottom) / (top - bottom));
+        columns[2][2] = -2.0 / (zfar - znear);
+        columns[3][2] = -((zfar + znear) / (zfar - znear));
+        columns[3][3] = 1.0;
+    }
+
+    private void set_orthogonal(T size, T aspect, T znear, T zfar, bool flip_fov) 
+    {
+        if (!flip_fov)
+            size *= aspect;
+
+        set_orthogonal(-size / 2, +size / 2, -size / aspect / 2, +size / aspect / 2, znear, zfar);
+    }
+
+    private void set_perspective(T fovy_degrees, T aspect, T z_near, T z_far, bool flip_fov) 
+    {
+        if (flip_fov) 
+        {
+            fovy_degrees = get_fovy(fovy_degrees, 1.0 / aspect);
+        }
+
+        T sine, cotangent, deltaZ;
+        T radians = gm_deg_to_rad(fovy_degrees / 2.0);
+
+        deltaZ = z_far - z_near;
+        sine = gm_sin(radians);
+
+        if ((deltaZ == 0) || (sine == 0) || (aspect == 0)) 
+        {
+            return;
+        }
+        cotangent = gm_cos(radians) / sine;
+
+        set_identity();
+
+        columns[0][0] = cotangent / aspect;
+        columns[1][1] = cotangent;
+        columns[2][2] = -(z_far + z_near) / deltaZ;
+        columns[2][3] = -1;
+        columns[3][2] = -2 * z_near * z_far / deltaZ;
+        columns[3][3] = 0;
+    }
+
+    private void set_perspective(T p_fovy_degrees, T p_aspect, T p_z_near, T p_z_far, bool p_flip_fov, int p_eye, T p_intraocular_dist, T p_convergence_dist) 
+    {
+        if (p_flip_fov) 
+        {
+            p_fovy_degrees = get_fovy(p_fovy_degrees, 1.0 / p_aspect);
+        }
+
+        T left, right, modeltranslation, ymax, xmax, frustumshift;
+
+        ymax = p_z_near * gm_tan(gm_deg_to_rad(p_fovy_degrees / 2.0));
+        xmax = ymax * p_aspect;
+        frustumshift = (p_intraocular_dist / 2.0) * p_z_near / p_convergence_dist;
+
+        switch (p_eye) 
+        {
+            case 1: { // left eye
+                left = -xmax + frustumshift;
+                right = xmax + frustumshift;
+                modeltranslation = p_intraocular_dist / 2.0;
+            } break;
+            case 2: 
+            { // right eye
+                left = -xmax - frustumshift;
+                right = xmax - frustumshift;
+                modeltranslation = -p_intraocular_dist / 2.0;
+            } break;
+            default: 
+            { // mono, should give the same result as set_perspective(p_fovy_degrees,p_aspect,p_z_near,p_z_far,p_flip_fov)
+                left = -xmax;
+                right = xmax;
+                modeltranslation = 0.0;
+            } break;
+        }
+
+        set_frustum(left, right, -ymax, ymax, p_z_near, p_z_far);
+
+        // translate matrix by (modeltranslation, 0.0, 0.0)
+        P cm;
+        cm.set_identity();
+        cm.columns[3][0] = modeltranslation;
+        this = this * cm;
+    }
+
+    // operators
+
+    P opBinary(string op)(const P matrix) const if (op == "*")
+    {
+        P r;
+        for (int j = 0; j < 4; j++) 
+        {
+            for (int i = 0; i < 4; i++) 
+            {
+                T ab = 0;
+                for (int k = 0; k < 4; k++) 
+                    ab += columns[k][i] * matrix.columns[j][k];
+                r.columns[j][i] = ab;
+            }
+        }
+        return r;
     }
 }
 
