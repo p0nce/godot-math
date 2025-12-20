@@ -98,6 +98,21 @@ unittest
     assert((invB * B).is_equal_approx(Basis.IDENTITY));
 }
 
+@("Basis inverse any")
+unittest
+{
+    Basis B = Basis(Vector3(-0.9, -0.25, 0.15),
+                    Vector3(0.6, 0.5,-0.1),
+                    Vector3(0.1,-0.25,0.15));
+    assert(!B.is_rotation());
+    assert(!B.is_conformal());
+    Basis invB = B.inverse();
+    assert(!invB.is_rotation());
+    assert(!invB.is_conformal());
+    assert((B * invB).is_equal_approx(Basis.IDENTITY));
+    assert((invB * B).is_equal_approx(Basis.IDENTITY));
+}
+
 /*
 
     Transform3D T = Transform3D(Basis.from_euler(Vector3(4, 5, 6)), Vector3(-10, 11, 12));//.scaled(Vector3(1.4, 1.2, 1.1));
