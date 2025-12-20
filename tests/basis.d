@@ -72,3 +72,37 @@ unittest
     Basisd Bd = cast(Basisd)B;
     Basis C = cast(Basis)Bd;
 }
+
+@("Basis inverse rotation")
+unittest
+{
+    Basis B = Basis.from_euler(Vector3(4, 5, 6));
+    assert(B.is_rotation());
+    assert(B.is_conformal());
+    Basis invB = B.inverse();
+    assert(invB.is_rotation());
+    assert(invB.is_conformal());
+    assert((B * invB).is_equal_approx(Basis.IDENTITY));
+    assert((invB * B).is_equal_approx(Basis.IDENTITY));
+}
+
+@("Basis inverse conformal")
+unittest
+{
+    Basis B = Basis.from_euler(Vector3(4, 5, 6)).scaled(Vector3(2, 2, 2));
+    assert(!B.is_rotation());
+    assert(B.is_conformal());
+    Basis invB = B.inverse();
+    assert(invB.is_conformal());
+    assert((B * invB).is_equal_approx(Basis.IDENTITY));
+    assert((invB * B).is_equal_approx(Basis.IDENTITY));
+}
+
+/*
+
+    Transform3D T = Transform3D(Basis.from_euler(Vector3(4, 5, 6)), Vector3(-10, 11, 12));//.scaled(Vector3(1.4, 1.2, 1.1));
+
+    Transform3D inv = T.affine_inverse();
+    assert( (inv * T).is_equal_approx(Transform3D.IDENTITY));
+    assert( (T * inv).is_equal_approx(Transform3D.IDENTITY));
+}*/

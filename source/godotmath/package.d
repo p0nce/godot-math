@@ -2065,6 +2065,11 @@ pure nothrow @nogc @safe:
         V3(0, 0, 1)
     ];
 
+    enum B IDENTITY = B(V3( 1, 0, 0), V3(0,  1, 0), V3(0, 0,  1));
+    enum B FLIP_X   = B(V3(-1, 0, 0), V3(0,  1, 0), V3(0, 0,  1));
+    enum B FLIP_Y   = B(V3( 1, 0, 0), V3(0, -1, 0), V3(0, 0,  1));
+    enum B FLIP_Z   = B(V3( 1, 0, 0), V3(0,  1, 0), V3(0, 0, -1));
+
     this(V3 axis, T angle)
     {
         set_axis_angle(axis, angle);
@@ -2762,6 +2767,12 @@ pure nothrow @nogc @safe:
              m.tdotx(rows[2]), m.tdoty(rows[2]), m.tdotz(rows[2]));
 
     V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
+
+    B opOpAssign(string op)(const B m) if (op == "*")
+    {
+        this = this * m;
+        return this;
+    }
 }
 
 
@@ -2914,6 +2925,32 @@ pure nothrow @nogc @safe:
 
     T3D translated(V3 offset) const => T3D(basis, origin + offset);
     T3D translated_local(V3 offset) const => T3D(basis, origin + basis.xform(offset));
+
+    V3 xform(const V3 v) const => V3(basis[0].dot(v) + origin.x,
+                                     basis[1].dot(v) + origin.y,
+                                     basis[2].dot(v) + origin.z);
+
+    // operators
+    T3D opBinary(string op)(const T3D transform) const if (op == "*")
+    {
+        T3D r = this;
+        r *= transform;
+        return r;
+    }
+    T3D opOpAssign(string op)(const T3D transform) if (op == "*") 
+    {
+        origin = xform(transform.origin);
+        basis *= transform.basis;
+        return this;
+    }
+    T3D opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
+    T3D opBinary(string op)(const T fact) const if (op == "*")
+    {
+        origin *= fact;
+        basis *= fact;
+    }
+
+    
 }
 
 
