@@ -2955,7 +2955,7 @@ pure nothrow @nogc @safe:
         basis *= transform.basis;
         return this;
     }
-    T3D opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
+    V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
     T3D opBinary(string op)(const T fact) const if (op == "*")
     {
         origin *= fact;

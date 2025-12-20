@@ -72,6 +72,7 @@ unittest
     assert(forward.is_equal_approx(Vector3(0, 0, -1)));
 }
 
+
 @("Transform3D orthonormalized")
 unittest
 {
@@ -88,21 +89,20 @@ unittest
     // Origin preserved
     assert(O.origin.is_equal_approx(Vector3(5, 5, 5)));
 }
++/
 
 @("Transform3D xform idempotence")
 unittest
 {
-    import godotmath : GM_PI;
-    auto T = Transform3D.IDENTITY.rotated(Vector3(1, 1, 1).normalized, cast(float)(GM_PI / 3));
-    T.origin = Vector3(7, 8, 9);
-    
-    auto inv = T.affine_inverse();
-    auto v = Vector3(1, 2, 3);
+    Transform3Dd T = Transform3Dd.IDENTITY.rotated(Vector3d(1, 1, 1).normalized, cast(double)(GM_PI / 3));
+    T.origin = Vector3d(7, 8, 9);
+
+    Transform3Dd inv = T.affine_inverse();
+    Vector3d v = Vector3d(1, 2, 3);
     
     // Transform then inverse should return original
-    auto transformed = T.basis.xform(v) + T.origin;
-    auto back = inv.basis.xform(transformed) + inv.origin;
+    Vector3d transformed = T * v;
+    Vector3d back = inv * transformed;
     
     assert(back.is_equal_approx(v));
 }
-+/
