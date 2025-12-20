@@ -1866,7 +1866,7 @@ pure nothrow @nogc @safe:
     {
         T2D r = this;
         r.affine_invert();
-        return this;
+        return r;
     }
 
     V2 basis_xform(V2 v) const => V2(tdotx(v), tdoty(v));
@@ -1904,7 +1904,7 @@ pure nothrow @nogc @safe:
     {
         T2D r = this;
         r.invert();
-        return this;
+        return r;
     }
 
     bool is_conformal() const
@@ -1944,7 +1944,7 @@ pure nothrow @nogc @safe:
     {
         T2D r = this;
         r.orthonormalize();
-        return this;
+        return r;
     }
 
     T2D rotated(float angle) const => T2D(angle, V2.ZERO) * this; /// Equivalent to left multiplication
@@ -2939,6 +2939,7 @@ pure nothrow @nogc @safe:
 
     private
     {
+        alias V2   = Vector2Impl!T;
         alias V4   = Vector4Impl!T;
         alias P    = ProjectionImpl!T;
         alias T3D  = Transform3DImpl!T;
@@ -3011,6 +3012,13 @@ pure nothrow @nogc @safe:
     {
         P proj;
         proj.set_frustum(left, right, bottom, top, z_near, z_far);
+        return proj;
+    }
+
+    static P create_frustum_aspect(T size, T aspect, V2 offset, T z_near, T z_far, bool flip_fov = false)
+    {
+        P proj;
+        proj.set_frustum(size, aspect, offset, z_near, z_far, flip_fov);
         return proj;
     }
 
@@ -3092,6 +3100,13 @@ pure nothrow @nogc @safe:
         m[13] = 0;
         m[14] = d;
         m[15] = 0;
+    }
+
+    private void set_frustum(T size, T aspect, V2 offset, T near, T far, bool flip_fov)
+    {
+        if (!flip_fov)
+            size *= aspect;
+        set_frustum(-size / 2 + offset.x, +size / 2 + offset.x, -size / aspect / 2 + offset.y, size / aspect / 2 + offset.y, near, far);
     }
 }
 
