@@ -3521,7 +3521,6 @@ pure nothrow @nogc @safe:
         }
     }
 
-
     private void set_frustum(T left, T right, T bottom, T top, T near, T far)
     {
         assert(right > left);
@@ -3627,23 +3626,22 @@ pure nothrow @nogc @safe:
 
         switch (p_eye) 
         {
-            case 1: { // left eye
+            case 1: // left eye
                 left = -xmax + frustumshift;
                 right = xmax + frustumshift;
                 modeltranslation = p_intraocular_dist / 2.0;
-            } break;
-            case 2: 
-            { // right eye
+                break;
+            case 2: // right eye
                 left = -xmax - frustumshift;
                 right = xmax - frustumshift;
                 modeltranslation = -p_intraocular_dist / 2.0;
-            } break;
+                break;
             default: 
-            { // mono, should give the same result as set_perspective(p_fovy_degrees,p_aspect,p_z_near,p_z_far,p_flip_fov)
+                // mono, should give the same result as set_perspective(p_fovy_degrees,p_aspect,p_z_near,p_z_far,p_flip_fov)
                 left = -xmax;
                 right = xmax;
                 modeltranslation = 0.0;
-            } break;
+                break;
         }
 
         set_frustum(left, right, -ymax, ymax, p_z_near, p_z_far);
