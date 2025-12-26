@@ -3005,6 +3005,7 @@ pure nothrow @nogc @safe:
         alias P    = ProjectionImpl!T;
         alias T3D  = Transform3DImpl!T;
         alias Elem = T;
+        alias C = columns;
     }
 
     // Identity by default
@@ -3051,6 +3052,21 @@ pure nothrow @nogc @safe:
         m[13] = tr.origin.y;
         m[14] = tr.origin.z;
         m[15] = 1.0;
+    }
+
+    private void add_jitter_offset(const V2 offset) 
+    {
+        C[3][0] += offset.x;
+        C[3][1] += offset.y;
+    }
+
+    private void adjust_perspective_znear(T new_znear) 
+    {
+        T zfar = get_z_far();
+        T znear = new_znear;
+        T deltaZ = zfar - znear;
+        C[2][2] = -(zfar + znear) / deltaZ;
+        C[3][2] = -2 * znear * zfar / deltaZ;
     }
 
     static P create_depth_correction(bool flip_y)
@@ -3106,9 +3122,353 @@ pure nothrow @nogc @safe:
         return proj;
     }
 
+    static P create_perspective_hmd(T fovy, T aspect, T z_near, T z_far, bool flip_fov, int eye, T intraocular_dist, T convergence_dist)
+    {
+        P proj;
+        proj.set_perspective(fovy, aspect, z_near, z_far, flip_fov, eye, intraocular_dist, convergence_dist);
+        return proj;
+    }
+
+    T determinant() const 
+    {
+        return C[0][3] * C[1][2] * C[2][1] * C[3][0] - C[0][2] * C[1][3] * C[2][1] * C[3][0] -
+               C[0][3] * C[1][1] * C[2][2] * C[3][0] + C[0][1] * C[1][3] * C[2][2] * C[3][0] +
+               C[0][2] * C[1][1] * C[2][3] * C[3][0] - C[0][1] * C[1][2] * C[2][3] * C[3][0] -
+               C[0][3] * C[1][2] * C[2][0] * C[3][1] + C[0][2] * C[1][3] * C[2][0] * C[3][1] +
+               C[0][3] * C[1][0] * C[2][2] * C[3][1] - C[0][0] * C[1][3] * C[2][2] * C[3][1] -
+               C[0][2] * C[1][0] * C[2][3] * C[3][1] + C[0][0] * C[1][2] * C[2][3] * C[3][1] +
+               C[0][3] * C[1][1] * C[2][0] * C[3][2] - C[0][1] * C[1][3] * C[2][0] * C[3][2] -
+               C[0][3] * C[1][0] * C[2][1] * C[3][2] + C[0][0] * C[1][3] * C[2][1] * C[3][2] +
+               C[0][1] * C[1][0] * C[2][3] * C[3][2] - C[0][0] * C[1][1] * C[2][3] * C[3][2] -
+               C[0][2] * C[1][1] * C[2][0] * C[3][3] + C[0][1] * C[1][2] * C[2][0] * C[3][3] +
+               C[0][2] * C[1][0] * C[2][1] * C[3][3] - C[0][0] * C[1][2] * C[2][1] * C[3][3] -
+               C[0][1] * C[1][0] * C[2][2] * C[3][3] + C[0][0] * C[1][1] * C[2][2] * C[3][3];
+    }
+
+    private void flip_y()
+    {
+        for (int i = 0; i < 4; i++)
+            C[1][i] = -C[1][i];
+    }
+
+    P flipped_y() const
+    {
+        P proj = this;
+        proj.flip_y();
+        return proj;
+    }
+
+    T get_aspect() const
+    {
+        // NOTE: This assumes a rectangular projection plane, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - the projection plane is rectangular (i.e. columns[0][2] and [1][2] == 0 if columns[2][3] != 0)
+        return C[1][1] / C[0][0];
+    }
+
+    V2 get_far_plane_half_extents() const
+    {
+        // NOTE: This assumes a symmetrical frustum, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - the projection plane is rectangular (i.e. columns[0][2] and [1][2] == 0 if columns[2][3] != 0)
+        // - there is no offset / skew (i.e. columns[2][0] == columns[2][1] == 0)
+        T w = -get_z_far() * C[2][3] + C[3][3];
+        return V2(w / C[0][0], w / C[1][1]);
+    }
+
+    T get_fov() const
+    {
+        // NOTE: This assumes a rectangular projection plane, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - the projection plane is rectangular (i.e. columns[0][2] and [1][2] == 0 if columns[2][3] != 0)
+        if (columns[2][0] == 0) 
+        {
+            return gm_rad_to_deg(2 * gm_atan2(cast(T)1, C[0][0]));
+        } 
+        else 
+        {
+            // The frustum is asymmetrical so we need to calculate the left and right angles separately.
+            T right = gm_atan2(C[2][0] + 1, C[0][0]);
+            T left = gm_atan2(C[2][0] - 1, C[0][0]);
+            return gm_rad_to_deg(right - left);
+        }
+    }
+
     static T get_fovy(T fovx, T aspect) 
     {
         return gm_rad_to_deg(gm_atan(aspect * gm_tan(gm_deg_to_rad(fovx) * 0.5f)) * 2.0f);
+    }
+
+    T get_lod_multiplier() const
+    {
+        // NOTE: This assumes a rectangular projection plane, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - the projection plane is rectangular (i.e. columns[0][2] and [1][2] == 0 if columns[2][3] != 0)
+        return 2 / C[0][0];
+    }
+
+    T get_pixels_per_meter(int for_pixel_width) const
+    {
+        // NOTE: This assumes a rectangular projection plane, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - the projection plane is rectangular (i.e. columns[0][2] and [1][2] == 0 if columns[2][3] != 0)
+        T width = 2 * (-get_z_near() * C[2][3] + C[3][3]) / C[0][0];
+        // Note: Godot was returning int for compat reasons
+        return for_pixel_width / width;
+    }
+
+    //TODO Plane get_projection_plane(plane: int) const 
+
+    V2 get_viewport_half_extents() const
+    {
+        // NOTE: This assumes a symmetrical frustum, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - the projection plane is rectangular (i.e. columns[0][2] and [1][2] == 0 if columns[2][3] != 0)
+        // - there is no offset / skew (i.e. columns[2][0] == columns[2][1] == 0)
+        T w = -get_z_near() * C[2][3] + C[3][3];
+        return V2(w / C[0][0], w / C[1][1]);
+    }
+
+    T get_z_far() const
+    {
+        // NOTE: This assumes z-facing near and far planes, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - near and far planes are z-facing (i.e. columns[0][2] and [1][2] == 0)
+        return (C[3][3] - C[3][2]) / (C[2][3] - C[2][2]);
+    }
+
+    T get_z_near() const
+    {
+        // NOTE: This assumes z-facing near and far planes, i.e. that :
+        // - the matrix is a projection across z-axis (i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0)
+        // - near and far planes are z-facing (i.e. columns[0][2] and [1][2] == 0)
+        return (C[3][3] + C[3][2]) / (C[2][3] + C[2][2]);
+    } 
+
+    P inverse() const
+    {
+        P cm = this;
+        cm.invert();
+        return cm;
+    }
+
+    void invert() @trusted
+    {
+        // Adapted from Mesa's `src/util/u_math.c` `util_invert_mat4x4`.
+        // MIT licensed. Copyright 2008 VMware, Inc. Authored by Jacques Leroy.
+        P temp;
+
+        T[8][4] wtmp;
+        T m0, m1, m2, m3, s;
+
+        T* r0 = wtmp[0].ptr;
+        T* r1 = wtmp[1].ptr;
+        T* r2 = wtmp[2].ptr;
+        T* r3 = wtmp[3].ptr;
+
+        static void SWAP(T* a, T* b)
+        {
+            T* c = a;
+            a = b;
+            b = c;
+        }
+
+        for (int n = 0; n < 4; ++n)
+        {
+            wtmp[n][0] = m[n + 4 * 0];
+            wtmp[n][1] = m[n + 4 * 1];
+            wtmp[n][2] = m[n + 4 * 2];
+            wtmp[n][3] = m[n + 4 * 3];
+            wtmp[n][4] = 1;
+            wtmp[n][5] = 0;
+            wtmp[n][6] = 0;
+            wtmp[n][7] = 0;
+        }
+
+        /* choose pivot - or die */
+        if (gm_abs(r3[0]) > gm_abs(r2[0])) SWAP(r3, r2);
+        if (gm_abs(r2[0]) > gm_abs(r1[0])) SWAP(r2, r1);
+        if (gm_abs(r1[0]) > gm_abs(r0[0])) SWAP(r1, r0);
+        assert(r0[0] != 0);
+
+        /* eliminate first variable     */
+        m1 = r1[0] / r0[0];
+        m2 = r2[0] / r0[0];
+        m3 = r3[0] / r0[0];
+        s = r0[1];
+        r1[1] -= m1 * s;
+        r2[1] -= m2 * s;
+        r3[1] -= m3 * s;
+        s = r0[2];
+        r1[2] -= m1 * s;
+        r2[2] -= m2 * s;
+        r3[2] -= m3 * s;
+        s = r0[3];
+        r1[3] -= m1 * s;
+        r2[3] -= m2 * s;
+        r3[3] -= m3 * s;
+        s = r0[4];
+        if (s != 0) 
+        {
+            r1[4] -= m1 * s;
+            r2[4] -= m2 * s;
+            r3[4] -= m3 * s;
+        }
+        s = r0[5];
+        if (s != 0) 
+        {
+            r1[5] -= m1 * s;
+            r2[5] -= m2 * s;
+            r3[5] -= m3 * s;
+        }
+        s = r0[6];
+        if (s != 0) 
+        {
+            r1[6] -= m1 * s;
+            r2[6] -= m2 * s;
+            r3[6] -= m3 * s;
+        }
+        s = r0[7];
+        if (s != 0) 
+        {
+            r1[7] -= m1 * s;
+            r2[7] -= m2 * s;
+            r3[7] -= m3 * s;
+        }
+
+        /* choose pivot - or die */
+        if (gm_abs(r3[1]) > gm_abs(r2[1])) SWAP(r3, r2);
+        if (gm_abs(r2[1]) > gm_abs(r1[1])) SWAP(r2, r1);
+        assert(r1[1] != 0);
+          
+        /* eliminate second variable */
+        m2 = r2[1] / r1[1];
+        m3 = r3[1] / r1[1];
+        r2[2] -= m2 * r1[2];
+        r3[2] -= m3 * r1[2];
+        r2[3] -= m2 * r1[3];
+        r3[3] -= m3 * r1[3];
+        s = r1[4];
+        if (0 != s) 
+        {
+            r2[4] -= m2 * s;
+            r3[4] -= m3 * s;
+        }
+        s = r1[5];
+        if (0 != s) 
+        {
+            r2[5] -= m2 * s;
+            r3[5] -= m3 * s;
+        }
+        s = r1[6];
+        if (0 != s) 
+        {
+            r2[6] -= m2 * s;
+            r3[6] -= m3 * s;
+        }
+        s = r1[7];
+        if (0 != s) 
+        {
+            r2[7] -= m2 * s;
+            r3[7] -= m3 * s;
+        }
+
+        /* choose pivot - or die */
+        if (gm_abs(r3[2]) > gm_abs(r2[2])) SWAP(r3, r2);
+        assert(r2[2] != 0);
+
+        /* eliminate third variable */
+        m3 = r3[2] / r2[2];
+        r3[3] -= m3 * r2[3];
+        r3[4] -= m3 * r2[4];
+        r3[5] -= m3 * r2[5];
+        r3[6] -= m3 * r2[6];
+        r3[7] -= m3 * r2[7];
+
+        /* last check */
+        assert(r3[3] != 0);
+
+        s = 1.0 / r3[3]; /* now back substitute row 3 */
+        r3[4] *= s;
+        r3[5] *= s;
+        r3[6] *= s;
+        r3[7] *= s;
+
+        m2 = r2[3]; /* now back substitute row 2 */
+        s = 1.0 / r2[2];
+        r2[4] = s * (r2[4] - r3[4] * m2);
+        r2[5] = s * (r2[5] - r3[5] * m2);
+        r2[6] = s * (r2[6] - r3[6] * m2);
+        r2[7] = s * (r2[7] - r3[7] * m2);
+        m1 = r1[3];
+        r1[4] -= r3[4] * m1;
+        r1[5] -= r3[5] * m1;
+        r1[6] -= r3[6] * m1;
+        r1[7] -= r3[7] * m1;
+        m0 = r0[3];
+        r0[4] -= r3[4] * m0;
+        r0[5] -= r3[5] * m0;
+        r0[6] -= r3[6] * m0;
+        r0[7] -= r3[7] * m0;
+
+        m1 = r1[2]; /* now back substitute row 1 */
+        s = 1.0 / r1[1];
+        r1[4] = s * (r1[4] - r2[4] * m1);
+        r1[5] = s * (r1[5] - r2[5] * m1),
+            r1[6] = s * (r1[6] - r2[6] * m1);
+        r1[7] = s * (r1[7] - r2[7] * m1);
+        m0 = r0[2];
+        r0[4] -= r2[4] * m0;
+        r0[5] -= r2[5] * m0;
+        r0[6] -= r2[6] * m0;
+        r0[7] -= r2[7] * m0;
+
+        m0 = r0[1]; /* now back substitute row 0 */
+        s = 1.0 / r0[0];
+        r0[4] = s * (r0[4] - r1[4] * m0);
+        r0[5] = s * (r0[5] - r1[5] * m0),
+            r0[6] = s * (r0[6] - r1[6] * m0);
+        r0[7] = s * (r0[7] - r1[7] * m0);
+
+        temp.m[0 + 4 * 0] = r0[4];
+        temp.m[0 + 4 * 1] = r0[5];
+        temp.m[0 + 4 * 2] = r0[6];
+        temp.m[0 + 4 * 3] = r0[7];
+        temp.m[1 + 4 * 0] = r1[4];
+        temp.m[1 + 4 * 1] = r1[5];
+        temp.m[1 + 4 * 2] = r1[6];
+        temp.m[1 + 4 * 3] = r1[7];
+        temp.m[2 + 4 * 0] = r2[4];
+        temp.m[2 + 4 * 1] = r2[5];
+        temp.m[2 + 4 * 2] = r2[6];
+        temp.m[2 + 4 * 3] = r2[7];
+        temp.m[3 + 4 * 0] = r3[4];
+        temp.m[3 + 4 * 1] = r3[5];
+        temp.m[3 + 4 * 2] = r3[6];
+        temp.m[3 + 4 * 3] = r3[7];
+
+        this = temp;
+    }
+
+    bool is_orthogonal() const 
+    {
+        // NOTE: This assumes that the matrix is a projection across z-axis
+        // i.e. is invertible and columns[0][1], [0][3], [1][0] and [1][3] == 0
+        return C[2][3] == 0.0;
+    }
+
+    P jitter_offseted(V2 offset) const
+    {
+        P proj = this;
+        proj.add_jitter_offset(offset);
+        return proj;
+    }
+
+    P perspective_znear_adjusted(T new_znear) const 
+    {
+        P proj = this;
+        proj.adjust_perspective_znear(new_znear);
+        return proj;
     }
 
     private void set_depth_correction(bool flip_y = true, bool reverse_z  =true, bool remap_z = true)
@@ -3134,13 +3494,13 @@ pure nothrow @nogc @safe:
     private void set_for_hmd(int eye, T aspect, T intraocular_dist, T display_width, T display_to_lens, T oversample, T z_near, T z_far) 
     {
         // we first calculate our base frustum on our values without taking our lens magnification into account.
-        T f1 = (intraocular_dist * 0.5) / display_to_lens;
-        T f2 = ((display_width - intraocular_dist) * 0.5) / display_to_lens;
-        T f3 = (display_width / 4.0) / display_to_lens;
+        T f1 = (intraocular_dist * 0.5f) / display_to_lens;
+        T f2 = ((display_width - intraocular_dist) * 0.5f) / display_to_lens;
+        T f3 = (display_width / 4.0f) / display_to_lens;
 
         // now we apply our oversample factor to increase our FOV. how much we oversample is always a balance we strike between performance and how much
         // we're willing to sacrifice in FOV.
-        T add = ((f1 + f2) * (oversample - 1.0)) / 2.0;
+        T add = ((f1 + f2) * (oversample - 1.0f)) / 2.0f;
         f1 += add;
         f2 += add;
         f3 *= oversample;
@@ -3206,13 +3566,13 @@ pure nothrow @nogc @safe:
     private void set_orthogonal(T left, T right, T bottom, T top, T znear, T zfar) 
     {
         set_identity();
-        columns[0][0] = 2.0 / (right - left);
-        columns[3][0] = -((right + left) / (right - left));
-        columns[1][1] = 2.0 / (top - bottom);
-        columns[3][1] = -((top + bottom) / (top - bottom));
-        columns[2][2] = -2.0 / (zfar - znear);
-        columns[3][2] = -((zfar + znear) / (zfar - znear));
-        columns[3][3] = 1.0;
+        C[0][0] = 2.0f / (right - left);
+        C[3][0] = -((right + left) / (right - left));
+        C[1][1] = 2.0f / (top - bottom);
+        C[3][1] = -((top + bottom) / (top - bottom));
+        C[2][2] = -2.0f / (zfar - znear);
+        C[3][2] = -((zfar + znear) / (zfar - znear));
+        C[3][3] = 1;
     }
 
     private void set_orthogonal(T size, T aspect, T znear, T zfar, bool flip_fov) 
@@ -3244,12 +3604,12 @@ pure nothrow @nogc @safe:
 
         set_identity();
 
-        columns[0][0] = cotangent / aspect;
-        columns[1][1] = cotangent;
-        columns[2][2] = -(z_far + z_near) / deltaZ;
-        columns[2][3] = -1;
-        columns[3][2] = -2 * z_near * z_far / deltaZ;
-        columns[3][3] = 0;
+        C[0][0] = cotangent / aspect;
+        C[1][1] = cotangent;
+        C[2][2] = -(z_far + z_near) / deltaZ;
+        C[2][3] = -1;
+        C[3][2] = -2 * z_near * z_far / deltaZ;
+        C[3][3] = 0;
     }
 
     private void set_perspective(T p_fovy_degrees, T p_aspect, T p_z_near, T p_z_far, bool p_flip_fov, int p_eye, T p_intraocular_dist, T p_convergence_dist) 
