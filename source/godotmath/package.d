@@ -3001,6 +3001,7 @@ pure nothrow @nogc @safe:
     private
     {
         alias V2   = Vector2Impl!T;
+        alias V3   = Vector3Impl!T;
         alias V4   = Vector4Impl!T;
         alias P    = ProjectionImpl!T;
         alias T3D  = Transform3DImpl!T;
@@ -3730,9 +3731,29 @@ pure nothrow @nogc @safe:
         cm.columns[3][0] = modeltranslation;
         this = this * cm;
     }
+    
+    V3 xform(const V3 v) const 
+    {
+        // Note: this works for a point (W = 1), not a normal
+	    V3 r;
+	    r.x = C[0][0] * v.x + C[1][0] * v.y + C[2][0] * v.z + C[3][0];
+	    r.y = C[0][1] * v.x + C[1][1] * v.y + C[2][1] * v.z + C[3][1];
+	    r.z = C[0][2] * v.x + C[1][2] * v.y + C[2][2] * v.z + C[3][2];
+	    T w = C[0][3] * v.x + C[1][3] * v.y + C[2][3] * v.z + C[3][3];
+	    return r / w;
+    }
 
-    // operators
+    V4 xform(const V4 v) const
+    {
+        V4 r;
+        r.x = C[0][0] * v.x + C[1][0] * v.y + C[2][0] * v.z + C[3][0] * v.w;
+        r.y = C[0][1] * v.x + C[1][1] * v.y + C[2][1] * v.z + C[3][1] * v.w;
+        r.z = C[0][2] * v.x + C[1][2] * v.y + C[2][2] * v.z + C[3][2] * v.w;
+        r.w = C[0][3] * v.x + C[1][3] * v.y + C[2][3] * v.z + C[3][3] * v.w;
+        return r;
+    }
 
+    V4 opBinary(string op)(const V4 v) const if (op == "*") => xform(v);    
     P opBinary(string op)(const P matrix) const if (op == "*")
     {
         P r;
