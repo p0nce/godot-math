@@ -21,11 +21,15 @@ pure nothrow @nogc @safe:
 //   Here when something is "float" it is actually `float` in the interface too,
 //   and same for `double`.
 
+// TODO Rect2, Rect2i, AABB, Plane
 // TODO all operators for Vector3
 // TODO all operators for Vector4
 // TODO all operators for Transform2D
 // TODO all operators for Transform3D
 // TODO all operators for Basis
+// TODO all operators for Projection
+// TODO: cast from Projection to Transform3D
+// Rect shall have scaleByFactor method (as deprecated alias to scale_by_factor)
 
 // Provide both float and double versions, should the need arise.
 alias Vector2  = Vector2Impl!float;  ///
@@ -2838,7 +2842,22 @@ pure nothrow @nogc @safe:
         this.origin = origin;
     }
 
-    // TODO this(Projection projection)
+    this(ProjectionImpl!T projection) // Note: is an implicit conversion in Godot
+    {
+        Transform3D tr;
+        basis.rows[0][0] = projection.m[0];
+        basis.rows[1][0] = projection.m[1];
+        basis.rows[2][0] = projection.m[2];
+        basis.rows[0][1] = projection.m[4];
+        basis.rows[1][1] = projection.m[5];
+        basis.rows[2][1] = projection.m[6];
+        basis.rows[0][2] = projection.m[8];
+        basis.rows[1][2] = projection.m[9];
+        basis.rows[2][2] = projection.m[10];
+        origin.x = projection.m[12];
+        origin.y = projection.m[13];
+        origin.z = projection.m[14];
+    }
 
     this(V3 x_axis, V3 y_axis, V3 z_axis, V3 origin)
     {
