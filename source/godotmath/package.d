@@ -138,7 +138,7 @@ enum GM_UNIT_EPSILON = 0.00001;
 float gm_abs(float x)   => libc.fabsf(x); ///
 double gm_abs(double x) => libc.fabs(x); ///
 int gm_abs(int x) => (x >= 0 ? x : -x); ///
-float  gm_acos(float x)  @trusted => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acosf, x)); ///
+float  gm_acos(float x)   => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acosf, x)); ///
 double gm_acos(double x)  => (x < -1) ? GM_PI : (x > 1 ? 0 : assumePureNothrowNogc(&libc.acos, x)); ///
 float  gm_acosh(float x)  => assumePureNothrowNogc(&libc.acoshf, x); ///
 double gm_acosh(double x) => assumePureNothrowNogc(&libc.acosh, x); ///
@@ -3449,6 +3449,9 @@ pure nothrow @nogc @safe:
 
         this = temp;
     }
+
+    bool is_equal_approx(const P other) const
+        => x.is_equal_approx(other.x) && y.is_equal_approx(other.y) && z.is_equal_approx(other.z) && w.is_equal_approx(other.w);
 
     bool is_orthogonal() const 
     {

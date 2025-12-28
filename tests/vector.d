@@ -241,3 +241,26 @@ unittest
     assert(gm_is_equal_approx(angle, cast(float)(GM_PI / 2)));
 }
 
+@("struct size checks")
+unittest
+{
+    assert(Vector2.sizeof == 8);
+    assert(Vector2i.sizeof == 8);
+    assert(Vector2d.sizeof == 16);
+    assert(Vector3.sizeof == 12);
+    assert(Vector3i.sizeof == 12);
+    assert(Vector3d.sizeof == 24);
+    assert(Vector4.sizeof == 16);
+    assert(Vector4i.sizeof == 16);
+    assert(Vector4d.sizeof == 32);
+    assert(Quaternion.sizeof == 16);
+    assert(Quaterniond.sizeof == 32);
+    assert(Transform2D.sizeof == 24);
+    assert(Transform2Dd.sizeof == 48);
+    assert(Transform3D.sizeof == 48);
+    assert(Transform3Dd.sizeof == 96);
+    assert(Basis.sizeof == 36);
+    assert(Basisd.sizeof == 72);
+    assert(Projection.sizeof == 64);
+    assert(Projectiond.sizeof == 128);
+}

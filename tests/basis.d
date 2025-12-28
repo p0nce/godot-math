@@ -73,8 +73,6 @@ unittest
         Vector3(3, 3, 3)
     );
     ma_base = ma_base.scaled(Vector3(0, 2, -2));
-    import std;
-    debug writeln(ma_base);
     assert(ma_base.x.is_equal_approx(Vector3(0.0, 2.0, -2.0)));
     assert(ma_base.y.is_equal_approx(Vector3(0.0, 4.0, -4.0)));
     assert(ma_base.z.is_equal_approx(Vector3(0.0, 6.0, -6.0)));
