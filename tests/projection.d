@@ -4,7 +4,7 @@ import godotmath;
 
 pure nothrow @nogc @safe:
 
-@("Projection * Projection")
+@("Projection inverse")
 unittest
 {
     // Using https://math.stackexchange.com/questions/2574905/invertible-4x4-matrix
@@ -23,22 +23,13 @@ unittest
     assert(B.determinant() == -8);
 
     Projection C = B.inverse();
-    import std;
 
-    Projection IB = Projection(Vector4(-17, -17, -4, 1),
+    Projection IB = Projection(Vector4(-17, 17, -4, 1),
                                Vector4(-9, 8.75, -2.25, 0.75),
                                Vector4(12, -11.75, 2.75, -0.75),
                                Vector4(16, -16, 4, -1));
 
-    debug writeln("B = ", B);
-    debug writeln("C = ", C);
-    debug writeln("IB = ", IB);
     assert(C.is_equal_approx(IB));
-
-
-//    debug writeln(C * IB);
-    /*
     assert( (C*B).is_equal_approx(Projection.IDENTITY));
-    assert( (B*C).is_equal_approx(Projection.IDENTITY));*/
-    
+    assert( (B*C).is_equal_approx(Projection.IDENTITY));
 }
