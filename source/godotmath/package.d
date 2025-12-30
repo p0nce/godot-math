@@ -9,6 +9,8 @@ import numem;
 import numem.core.traits;
 static import libc = core.stdc.math;
 
+version(LDC) import ldc.intrinsics; // for likely/unlikely
+
 pure nothrow @nogc @safe:
 
 // Changes vs Godot
@@ -38,6 +40,8 @@ alias Vector2d = Vector2Impl!double; ///
 
 alias Size2    = Vector2; ///
 alias Point2   = Vector2; ///
+alias Size2i   = Vector2i; /// #BONUS, for semantic
+alias Point2i  = Vector2i; /// #BONUS, for semantic
 
 alias Vector3  = Vector3Impl!float;  ///
 alias Vector3i = Vector3Impl!int;    ///
@@ -46,6 +50,10 @@ alias Vector3d = Vector3Impl!double; ///
 alias Vector4  = Vector4Impl!float;  ///
 alias Vector4i = Vector4Impl!int;    ///
 alias Vector4d = Vector4Impl!double; ///
+
+alias Rect2    = Rect2Impl!float;    ///
+alias Rect2i   = Rect2Impl!int;      ///
+alias Rect2d   = Rect2Impl!double;   ///
 
 alias Quaternion  = QuaternionImpl!float;  ///
 alias Quaterniond = QuaternionImpl!double; ///
@@ -380,6 +388,18 @@ double gm_lerp(double from, double to, double weight) ///
 float gm_lerp_angle(float from, float to, float weight) => from + gm_angle_difference(from, to) * weight; ///
 double gm_lerp_angle(double from, double to, double weight) => from + gm_angle_difference(from, to) * weight; ///
 
+version(LDC)
+{
+    bool gm_likely(bool b) => llvm_expect!bool(b, true);
+    bool gm_unlikely(bool b) => llvm_expect!bool(b, false);
+}
+else
+{
+    bool gm_likely(bool b) => b;
+    bool gm_unlikely(bool b) => b;
+}
+
+
 float gm_rad_to_deg(float y) => y * (180.0f / cast(float)GM_PI); ///
 double gm_rad_to_deg(double y) => y * (180.0 / GM_PI); ///
 
@@ -492,7 +512,7 @@ pure nothrow @nogc @safe:
     // All functions as defined at: 
     this(T x, T y) { this.x = x; this.y = y; }
     this(T[2] v) { this.x = v[0]; this.y = v[1]; }
-    V abs() => V(gm_abs(x), gm_abs(y));
+    V abs() const => V(gm_abs(x), gm_abs(y));
 
     static if (isFloat)
     {
@@ -600,7 +620,7 @@ pure nothrow @nogc @safe:
         V project(const V to) const => to * (dot(to) / to.length_squared());
         V reflect(const V normal) const
         {
-            assert(normal.is_normalized());
+            assert(normal.is_normalized(), "normal should be normalized for .reflect");
             return normal * 2 * dot(normal) - this;
         }
         V rotated(T by_radians) const 
@@ -831,7 +851,7 @@ pure nothrow @nogc @safe:
         V floor() const => V(gm_floor(x), gm_floor(y), gm_floor(z));
         V get_any_perpendicular()
         {
-            assert(! is_zero_approx() );
+            assert(! is_zero_approx(), "can't get perdendicular of a zero vector" );
             return cross((gm_abs(x) <= gm_abs(y) && gm_abs(x) <= gm_abs(z)) ? V.RIGHT : V.UP).normalized();
         }
         V inverse() const => V(1 / x, 1 / y, 1 / z);
@@ -957,7 +977,7 @@ pure nothrow @nogc @safe:
 
         V reflect(const V normal) const
         {
-            assert(normal.is_normalized());
+            assert(normal.is_normalized(), "normal should be normalized for .reflect");
             return normal * 2 * dot(normal) - this;
         }
 
@@ -1381,6 +1401,194 @@ pure nothrow @nogc @safe:
 
 
 
+
+
+/*
+    ██████╗ ███████╗ ██████╗████████╗██████╗ 
+    ██╔══██╗██╔════╝██╔════╝╚══██╔══╝╚════██╗
+    ██████╔╝█████╗  ██║        ██║    █████╔╝
+    ██╔══██╗██╔══╝  ██║        ██║   ██╔═══╝ 
+    ██║  ██║███████╗╚██████╗   ██║   ███████╗
+    ╚═╝  ╚═╝╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
+*/
+struct Rect2Impl(T)
+    if (is(T == int) || is(T == float) || is(T == double))
+{
+pure nothrow @nogc @safe:
+
+    private
+    {
+        alias R = Rect2Impl!T;
+        alias V2 = Vector2Impl!T;
+        alias Elem = T;
+
+        enum bool isInt = is(T == int);
+        enum bool isFloat = is(T == float) || is(T == double);
+        static if (isFloat)
+            alias F = T;
+        alias p = position;
+    }
+
+    V2 position; // usually top-left corner
+    V2 size;
+
+    this(V2 position, V2 size)
+    {
+        this.position = position;
+        this.size = size;
+    }
+
+    this(T x, T y, T width, T height)
+    {
+        position.x = x;
+        position.y = y;
+        size.x = width;
+        size.y = height;
+    }
+
+    R abs() const => R(position + size.min(0), size.abs());
+
+    T bottom() const => position.y + size.y;        // #BONUS
+    T bottom(T new_bottom) => size.y = new_bottom - position.y; // #BONUS
+
+    bool encloses(const R rect) const 
+    {
+        assert(gm_likely(size.x >= 0 && size.y >= 0 && rect.size.x >= 0 && rect.size.y >= 0),
+            "negative size rectangle in .encloses");
+        return (rect.p.x >= p.x) && (rect.p.y >= p.y) &&
+               ((rect.p.x + rect.size.x) <= (p.x + size.x)) &&
+               ((rect.p.y + rect.size.y) <= (p.y + size.y));
+    }
+
+    deprecated(".empty doesn't exist for Rect2, use !r.has_area() instead")
+    bool empty() const => !has_area;
+
+    R expand(const V2 point) const 
+    {
+        R r = this;
+        r.expand_to(point);
+        return r;
+    }
+
+    private void expand_to(V2 point) 
+    {
+        assert(gm_likely(size.x >= 0 && size.y >= 0),
+               "negative size rectangle in .expand");
+        V2 begin = p;
+        V2 end = p + size;
+
+        if (point.x < begin.x) begin.x = point.x;
+        if (point.y < begin.y) begin.y = point.y;
+        if (point.x > end.x) end.x = point.x;
+        if (point.y > end.y) end.y = point.y;
+        position = begin;
+        size = end - begin;
+    }
+
+    // Dplug transition
+    deprecated(".contains doesn't exist for Rect2, do you mean .encloses(rect) or .has_point(point)?")
+    alias contains = encloses;    
+
+    T get_area() const => size.x * size.y;
+
+    static if (isFloat)
+        V2 get_center() const => position + (size * 0.5f);
+
+    bool has_area() const => size.x > 0 && size.y > 0; // warning: semantic different with Dplug box2!!!
+
+    bool has_point(const V2 point) const 
+    {
+        assert(gm_likely(size.x >= 0 && size.y >= 0),
+            "negative size rectangle in .has_point");
+
+        if (point.x < position.x) return false;
+        if (point.y < position.y) return false;
+        if (point.x >= (position.x + size.x)) return false;
+        if (point.y >= (position.y + size.y)) return false;
+        return true;
+    }
+
+    T height() const => size.y;                    // #BONUS
+    T height(T new_height) => size.y = new_height; // #BONUS
+
+    bool intersects(const R rect, bool include_borders = false) const 
+    {
+        assert(gm_likely(size.x >= 0 && size.y >= 0
+            && rect.size.x >= 0 && rect.size.y >= 0),
+            "negative size rectangle in .intersects");
+        if (include_borders) 
+        {
+            if (p.x > (rect.p.x + rect.size.width)) return false;
+            if ((p.x + size.width) < rect.p.x) return false;
+            if (p.y > (rect.p.y + rect.size.height)) return false;
+            if ((p.y + size.height) < rect.p.y) return false;
+        } 
+        else 
+        {
+            if (p.x >= (rect.p.x + rect.size.width)) return false;
+            if ((p.x + size.width) <= rect.p.x) return false;
+            if (p.y >= (rect.p.y + rect.size.height)) return false;
+            if ((p.y + size.height) <= rect.p.y) return false;
+        }
+        return true;
+    }
+
+    T left() const => position.x; // #BONUS
+    T left(T new_left)            // #BONUS
+    {
+        size.x += (position.x - new_left); // doesn't modify .right
+        return position.x = new_left; 
+    }    
+
+    T right() const => position.x + size.x;        // #BONUS
+    T right(T new_right) => size.x = new_right - position.x; // #BONUS
+
+    T top() const => position.y; // #BONUS
+    T top(T new_top)             // #BONUS
+    {
+        size.y += (position.y - new_top); // doesn't modify .bottom
+        return position.y = new_top;        
+    }
+
+    // Dplug transition
+    deprecated(".translate doesn't exist for Rect2, you probably mean .translated")
+    alias translate = translated;
+
+    R translated(V2 offset)                        // #BONUS
+    {
+        R r = this;
+        r.position += offset;
+        return r;
+    }
+    R translated(T x, T y) => translated(V2(x, y));  // #BONUS
+
+    T width() const => size.x;                     // #BONUS    
+    T width(T new_width) => size.x = new_width;    // #BONUS
+
+    // operators
+
+    U opCast(U)() const if (isRect2Impl!U)
+    {    
+        static if (is(U.Elem == float))
+            return U(cast(float)position.x, cast(float)position.y, cast(float)size.x, cast(float)size.y);
+        else static if (is(U.Elem == double))
+            return U(cast(double)position.x, cast(double)position.y, cast(double)size.x, cast(double)size.y);
+        else static if (is(U.Elem == int))
+            return U(cast(int)position.x, cast(int)position.y, cast(int)size.x, cast(int)size.y);
+        else
+            static assert(false);
+    }
+}
+
+
+
+
+
+
+
+
+
+
 /*
       ██████╗ ██╗   ██╗ █████╗ ████████╗███████╗██████╗ ███╗   ██╗██╗ ██████╗ ███╗   ██╗
      ██╔═══██╗██║   ██║██╔══██╗╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██║██╔═══██╗████╗  ██║
@@ -1543,7 +1751,7 @@ pure nothrow @nogc @safe:
 
     V3 get_euler(EulerOrder order = GM_EULER_ORDER_YXZ) const 
     {
-        assert(is_normalized());
+        assert(is_normalized(), "can't convert non-normalized quaternion to Euler angles");
         return BasisImpl!T(this).get_euler(order);
     }
 
@@ -1577,8 +1785,7 @@ pure nothrow @nogc @safe:
 
     Q slerp(const Q to, T weight) const 
     {
-        assert(is_normalized);
-        assert(to.is_normalized);
+        assert(gm_likely(is_normalized && to.is_normalized), "can't slerp denormalized quaternions");
         Q to1;
 
         // calc cosine
@@ -3754,12 +3961,12 @@ pure nothrow @nogc @safe:
     V3 xform(const V3 v) const 
     {
         // Note: this works for a point (W = 1), not a normal
-	    V3 r;
-	    r.x = C[0][0] * v.x + C[1][0] * v.y + C[2][0] * v.z + C[3][0];
-	    r.y = C[0][1] * v.x + C[1][1] * v.y + C[2][1] * v.z + C[3][1];
-	    r.z = C[0][2] * v.x + C[1][2] * v.y + C[2][2] * v.z + C[3][2];
-	    T w = C[0][3] * v.x + C[1][3] * v.y + C[2][3] * v.z + C[3][3];
-	    return r / w;
+        V3 r;
+        r.x = C[0][0] * v.x + C[1][0] * v.y + C[2][0] * v.z + C[3][0];
+        r.y = C[0][1] * v.x + C[1][1] * v.y + C[2][1] * v.z + C[3][1];
+        r.z = C[0][2] * v.x + C[1][2] * v.y + C[2][2] * v.z + C[3][2];
+        T w = C[0][3] * v.x + C[1][3] * v.y + C[2][3] * v.z + C[3][3];
+        return r / w;
     }
 
     V4 xform(const V4 v) const
@@ -3798,6 +4005,7 @@ private:
 enum bool isVector2Impl(T)     = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T)     = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T)     = is(T : Vector4Impl!U, U...);
+enum bool isRect2Impl(T)       = is(T : Rect2Impl!U, U...);
 enum bool isQuaternionImpl(T)  = is(T : QuaternionImpl!U, U...);
 enum bool isTransform2DImpl(T) = is(T : Transform2DImpl!U, U...);
 enum bool isTransform3DImpl(T) = is(T : Transform3DImpl!U, U...);
