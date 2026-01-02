@@ -18,6 +18,7 @@ dependency "godot-math" version="~>1.0"
 
 ## Features
 
+- one file
 - Everything is fully `pure nothrow @nogc @safe`.
 - LDC, GDC, DMD
 

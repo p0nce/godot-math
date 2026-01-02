@@ -1,4 +1,11 @@
-orthonormalize, doesn't work.
+- orthonormalize, doesn't work?
+
+- translate AABB
+- translate Plane
+
+// TODO: cast from Projection to Transform3D
+// Rect shall have scaleByFactor method (as deprecated alias to scale_by_factor)
+
 
 TODO:
     from_euler avec 3 T

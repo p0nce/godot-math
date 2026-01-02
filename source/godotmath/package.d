@@ -13,23 +13,8 @@ version(LDC) import ldc.intrinsics; // for likely/unlikely
 
 pure nothrow @nogc @safe:
 
-// Changes vs Godot
-// - Both float and double versions exist at once, with a ***d suffix.
-// - in global scope, symbols get a gm_ prefix.
-// - .clampf/.clampi replaced by overloaded .clamp
-//   Likewise .snappedf /.snappedi replaced by overloaded .snapped. 
-//   Same for minf/mini/maxf/maxi => replaced by min/max
-// - in Godot names "f" would mean "float", and "float" is `double` in Godot.
-//   Here when something is "float" it is actually `float` in the interface too,
-//   and same for `double`.
 
-// TODO Rect2, Rect2i, AABB, Plane
-// TODO all operators for Vector3
-// TODO all operators for Vector4
-// TODO all operators for Transform2D
-// TODO all operators for Transform3D
-// TODO all operators for Basis
-// TODO all operators for Projection
+// TODO AABB, Plane
 // TODO: cast from Projection to Transform3D
 // Rect shall have scaleByFactor method (as deprecated alias to scale_by_factor)
 
@@ -1509,13 +1494,13 @@ pure nothrow @nogc @safe:
     R grow(T amount) const => grow_individual(amount, amount, amount, amount);
     R grow_individual(T left, T top, T right, T bottom) const 
     {
-		R r = this;
-		r.p.x -= left;
-		r.p.y -= top;
-		r.size.x += left + right;
-		r.size.y += top + bottom;
+        R r = this;
+        r.p.x -= left;
+        r.p.y -= top;
+        r.size.x += left + right;
+        r.size.y += top + bottom;
         return r;
-	}
+    }
     R grow_side(Side side, int amount) const =>
         grow_individual((GM_SIDE_LEFT   == side) ? amount : 0,
                         (GM_SIDE_TOP    == side) ? amount : 0,
@@ -1541,15 +1526,15 @@ pure nothrow @nogc @safe:
 
     R intersection(const R rect) const 
     {
-		R new_rect = rect;
-		if (!intersects(new_rect))
-			return R();
-		new_rect.p = rect.p.max(p);
-		V2 rect_end = rect.p + rect.size;
-		V2 end = p + size;
-		new_rect.size = rect_end.min(end) - new_rect.position;
-		return new_rect;
-	}
+        R new_rect = rect;
+        if (!intersects(new_rect))
+            return R();
+        new_rect.p = rect.p.max(p);
+        V2 rect_end = rect.p + rect.size;
+        V2 end = p + size;
+        new_rect.size = rect_end.min(end) - new_rect.position;
+        return new_rect;
+    }
 
     bool intersects(const R rect, bool include_borders = false) const 
     {
