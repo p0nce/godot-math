@@ -13,11 +13,6 @@ version(LDC) import ldc.intrinsics; // for likely/unlikely
 
 pure nothrow @nogc @safe:
 
-
-// TODO AABB, Plane
-// TODO: cast from Projection to Transform3D
-// Rect shall have scaleByFactor method (as deprecated alias to scale_by_factor)
-
 // Provide both float and double versions, should the need arise.
 alias Vector2  = Vector2Impl!float;  ///
 alias Vector2i = Vector2Impl!int;    ///
