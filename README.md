@@ -16,6 +16,15 @@
 dependency "godot-math" version="~>1.0"
 ```
 
+
+## Why?
+
+Godot's math bring helpful semantics to small vectors and matrices.
+A `Transform2D/Transform3D` is scaling + translation + rotation without shearing.
+A `Projection` is a 4x4 matrix scaling with potentially perspective transform.
+A `Basis` is a 3x3 matrix that only deals with base change / rotation.
+
+
 ## Features
 
 - one .d file
