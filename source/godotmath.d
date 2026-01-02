@@ -1,7 +1,26 @@
 /*
-    Copyright (c) 2014-2025 Godot Engine contributors.
-    Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur. 
-    Copyright (c) 2025 Guillaume Piolat
+Copyright (c) 2014-2025 Godot Engine contributors.
+Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur. 
+Copyright (c) 2025 Guillaume Piolat
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 */
 module godotmath;
 
@@ -166,45 +185,45 @@ double  gm_atan(double x)   => libc.atan(x); //assumePureNothrowNogc(&libc.atan,
 float  gm_atan2(float y, float x)   => assumePureNothrowNogc(&libc.atan2f, y, x); ///
 double gm_atan2(double y, double x) => assumePureNothrowNogc(&libc.atan2, y, x); ///
 
-float gm_bezier_derivative(float p_start, float p_control_1, 
-                           float p_control_2, float p_end, float p_t) ///
+float gm_bezier_derivative(float start, float control_1, 
+                           float control_2, float end, float t) ///
 {
-    float omt = (1.0f - p_t);
+    float omt = (1.0f - t);
     float omt2 = omt * omt;
-    float t2 = p_t * p_t;
-    float d = (p_control_1 - p_start) * 3.0f * omt2 + (p_control_2 - p_control_1) * 6.0f * omt * p_t + (p_end - p_control_2) * 3.0f * t2;
+    float t2 = t * t;
+    float d = (control_1 - start) * 3.0f * omt2 + (control_2 - control_1) * 6.0f * omt * t + (end - control_2) * 3.0f * t2;
     return d;
 }
 
-double gm_bezier_derivative(double p_start, double p_control_1, 
-                            double p_control_2, double p_end, double p_t) /// 
+double gm_bezier_derivative(double start, double control_1, 
+                            double control_2, double end, double t) /// 
 {
-    double omt = (1.0 - p_t);
+    double omt = (1.0 - t);
     double omt2 = omt * omt;
-    double t2 = p_t * p_t;
+    double t2 = t * t;
 
-    double d = (p_control_1 - p_start) * 3.0 * omt2 + (p_control_2 - p_control_1) * 6.0 * omt * p_t + (p_end - p_control_2) * 3.0 * t2;
+    double d = (control_1 - start) * 3.0 * omt2 + (control_2 - control_1) * 6.0 * omt * t + (end - control_2) * 3.0 * t2;
     return d;
 }
 
-float gm_bezier_interpolate(float p_start, float p_control_1, float p_control_2, float p_end, float p_t) ///
+float gm_bezier_interpolate(float start, float control_1, float control_2, float end, float t) ///
 {
-    float omt = (1.0f - p_t);
+    float omt = (1.0f - t);
     float omt2 = omt * omt;
     float omt3 = omt2 * omt;
-    float t2 = p_t * p_t;
-    float t3 = t2 * p_t;
-    return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0f + p_control_2 * omt * t2 * 3.0f + p_end * t3;
+    float t2 = t * t;
+    float t3 = t2 * t;
+    return start * omt3 + control_1 * omt2 * t * 3.0f + control_2 * omt * t2 * 3.0f + end * t3;
 }
 
-double gm_bezier_interpolate(double p_start, double p_control_1, double p_control_2, double p_end, double p_t) ///
+double gm_bezier_interpolate(double start, double control_1, double control_2, double end, double t) ///
 {
-    double omt = (1.0 - p_t);
+    double omt = (1.0 - t);
     double omt2 = omt * omt;
     double omt3 = omt2 * omt;
-    double t2 = p_t * p_t;
-    double t3 = t2 * p_t;
-    return p_start * omt3 + p_control_1 * omt2 * p_t * 3.0 + p_control_2 * omt * t2 * 3.0 + p_end * t3;
+    double t2 = t * t;
+    double t3 = t2 * t;
+    return start * omt3 + control_1 * omt2 * t * 3.0 + control_2 * omt * t2 * 3.0 + end * t3;
 }
 
 float  gm_ceil(float x)  => libc.ceilf(x); ///
@@ -234,47 +253,47 @@ int gm_clamp(int value, int min, int max) ///
 float  gm_cos(float x)  => libc.cosf(x); ///
 double gm_cos(double x) => libc.cos(x); ///
 
-double gm_cubic_interpolate(double p_from, double p_to, double p_pre, double p_post, double p_weight) ///
+double gm_cubic_interpolate(double from, double to, double pre, double post, double weight) ///
 {
     return 0.5 *
-        ((p_from * 2.0) +
-         (-p_pre + p_to) * p_weight +
-         (2.0 * p_pre - 5.0 * p_from + 4.0 * p_to - p_post) * (p_weight * p_weight) +
-         (-p_pre + 3.0 * p_from - 3.0 * p_to + p_post) * (p_weight * p_weight * p_weight));
+        ((from * 2.0) +
+         (-pre + to) * weight +
+         (2.0 * pre - 5.0 * from + 4.0 * to - post) * (weight * weight) +
+         (-pre + 3.0 * from - 3.0 * to + post) * (weight * weight * weight));
 }
 
-float gm_cubic_interpolate(float p_from, float p_to, float p_pre, float p_post, float p_weight) ///
+float gm_cubic_interpolate(float from, float to, float pre, float post, float weight) ///
 {
     return 0.5f *
-        ((p_from * 2.0f) +
-         (-p_pre + p_to) * p_weight +
-         (2.0f * p_pre - 5.0f * p_from + 4.0f * p_to - p_post) * (p_weight * p_weight) +
-         (-p_pre + 3.0f * p_from - 3.0f * p_to + p_post) * (p_weight * p_weight * p_weight));
+        ((from * 2.0f) +
+         (-pre + to) * weight +
+         (2.0f * pre - 5.0f * from + 4.0f * to - post) * (weight * weight) +
+         (-pre + 3.0f * from - 3.0f * to + post) * (weight * weight * weight));
 }
 
-double gm_cubic_interpolate_in_time(double p_from, double p_to, double p_pre, double p_post, double p_weight,
-                                    double p_to_t, double p_pre_t, double p_post_t) ///
+double gm_cubic_interpolate_in_time(double from, double to, double pre, double post, double weight,
+                                    double to_t, double pre_t, double post_t) ///
 {
     /* Barry-Goldman method */
-    double t = gm_lerp(0.0, p_to_t, p_weight);
-    double a1 = gm_lerp(p_pre, p_from, p_pre_t == 0 ? 0.0 : (t - p_pre_t) / -p_pre_t);
-    double a2 = gm_lerp(p_from, p_to, p_to_t == 0 ? 0.5 : t / p_to_t);
-    double a3 = gm_lerp(p_to, p_post, p_post_t - p_to_t == 0 ? 1.0 : (t - p_to_t) / (p_post_t - p_to_t));
-    double b1 = gm_lerp(a1, a2, p_to_t - p_pre_t == 0 ? 0.0 : (t - p_pre_t) / (p_to_t - p_pre_t));
-    double b2 = gm_lerp(a2, a3, p_post_t == 0 ? 1.0 : t / p_post_t);
-    return gm_lerp(b1, b2, p_to_t == 0 ? 0.5 : t / p_to_t);
+    double t = gm_lerp(0.0, to_t, weight);
+    double a1 = gm_lerp(pre, from, pre_t == 0 ? 0.0 : (t - pre_t) / -pre_t);
+    double a2 = gm_lerp(from, to, to_t == 0 ? 0.5 : t / to_t);
+    double a3 = gm_lerp(to, post, post_t - to_t == 0 ? 1.0 : (t - to_t) / (post_t - to_t));
+    double b1 = gm_lerp(a1, a2, to_t - pre_t == 0 ? 0.0 : (t - pre_t) / (to_t - pre_t));
+    double b2 = gm_lerp(a2, a3, post_t == 0 ? 1.0 : t / post_t);
+    return gm_lerp(b1, b2, to_t == 0 ? 0.5 : t / to_t);
 }
-float gm_cubic_interpolate_in_time(float p_from, float p_to, float p_pre, float p_post, float p_weight,
-                                   float p_to_t, float p_pre_t, float p_post_t) ///
+float gm_cubic_interpolate_in_time(float from, float to, float pre, float post, float weight,
+                                   float to_t, float pre_t, float post_t) ///
 {
     /* Barry-Goldman method */
-    float t = gm_lerp(0.0f, p_to_t, p_weight);
-    float a1 = gm_lerp(p_pre, p_from, p_pre_t == 0 ? 0.0f : (t - p_pre_t) / -p_pre_t);
-    float a2 = gm_lerp(p_from, p_to, p_to_t == 0 ? 0.5f : t / p_to_t);
-    float a3 = gm_lerp(p_to, p_post, p_post_t - p_to_t == 0 ? 1.0f : (t - p_to_t) / (p_post_t - p_to_t));
-    float b1 = gm_lerp(a1, a2, p_to_t - p_pre_t == 0 ? 0.0f : (t - p_pre_t) / (p_to_t - p_pre_t));
-    float b2 = gm_lerp(a2, a3, p_post_t == 0 ? 1.0f : t / p_post_t);
-    return gm_lerp(b1, b2, p_to_t == 0 ? 0.5f : t / p_to_t);
+    float t = gm_lerp(0.0f, to_t, weight);
+    float a1 = gm_lerp(pre, from, pre_t == 0 ? 0.0f : (t - pre_t) / -pre_t);
+    float a2 = gm_lerp(from, to, to_t == 0 ? 0.5f : t / to_t);
+    float a3 = gm_lerp(to, post, post_t - to_t == 0 ? 1.0f : (t - to_t) / (post_t - to_t));
+    float b1 = gm_lerp(a1, a2, to_t - pre_t == 0 ? 0.0f : (t - pre_t) / (to_t - pre_t));
+    float b2 = gm_lerp(a2, a3, post_t == 0 ? 1.0f : t / post_t);
+    return gm_lerp(b1, b2, to_t == 0 ? 0.5f : t / to_t);
 }
 
 float gm_deg_to_rad(float y) => y * (cast(float)GM_PI / 180.0f); ///
@@ -307,56 +326,56 @@ float gm_fposmod(float x, float y) ///
     return value;
 }
 
-bool gm_is_equal_approx(float p_left, float p_right) ///
+bool gm_is_equal_approx(float left, float right) ///
 {
     // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right) {
+    if (left == right) {
         return true;
     }
     // Then check for approximate equality.
-    float tolerance = cast(float)GM_CMP_EPSILON * gm_abs(p_left);
+    float tolerance = cast(float)GM_CMP_EPSILON * gm_abs(left);
     if (tolerance < cast(float)GM_CMP_EPSILON) 
     {
         tolerance = cast(float)GM_CMP_EPSILON;
     }
-    return gm_abs(p_left - p_right) < tolerance;
+    return gm_abs(left - right) < tolerance;
 }
 
-bool gm_is_equal_approx(double p_left, double p_right) ///
+bool gm_is_equal_approx(double left, double right) ///
 {
     // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right) 
+    if (left == right) 
     {
         return true;
     }
     // Then check for approximate equality.
-    double tolerance = GM_CMP_EPSILON * gm_abs(p_left);
+    double tolerance = GM_CMP_EPSILON * gm_abs(left);
     if (tolerance < GM_CMP_EPSILON) 
     {
         tolerance = GM_CMP_EPSILON;
     }
-    return gm_abs(p_left - p_right) < tolerance;
+    return gm_abs(left - right) < tolerance;
 }
 
-bool gm_is_equal_approx(float p_left, float p_right, float p_tolerance) /// 
+bool gm_is_equal_approx(float left, float right, float tolerance) /// 
 {
     // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right)
+    if (left == right)
         return true;
 
     // Then check for approximate equality.
-    return gm_abs(p_left - p_right) < p_tolerance;
+    return gm_abs(left - right) < tolerance;
 }
 
-bool gm_is_equal_approx(double p_left, double p_right, double p_tolerance) ///
+bool gm_is_equal_approx(double left, double right, double tolerance) ///
 {
     // Check for exact equality first, required to handle "infinity" values.
-    if (p_left == p_right) 
+    if (left == right) 
     {
         return true;
     }
     // Then check for approximate equality.
-    return gm_abs(p_left - p_right) < p_tolerance;
+    return gm_abs(left - right) < tolerance;
 }
 
 bool gm_is_finite(float x)  => libc.isfinite(x) != 0; ///
