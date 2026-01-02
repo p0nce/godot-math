@@ -426,6 +426,7 @@ bool gm_signbit(double num) => num < 0;  ///
 float  gm_sin(float x)   => libc.sinf(x); ///
 double gm_sin(double x)  => libc.sin(x); ///
 
+float gm_snapped(float value, float step) => gm_snapped(cast(double)value, cast(double)step); ///
 double gm_snapped(double value, double step) ///
 {
     // BUG: floor(x + 0.5) not exactly the same as round
@@ -1480,6 +1481,8 @@ pure nothrow @nogc @safe:
         return r;
     }
 
+    deprecated("expand doesn't exist for Rect2. Do you mean .merge(Rect2) or merge_non_empty(Rect2) instead?") alias expand = merge;
+
     private void expand_to(V2 point) 
     {
         assert(gm_likely(size.x >= 0 && size.y >= 0),
@@ -1518,9 +1521,9 @@ pure nothrow @nogc @safe:
                         (GM_SIDE_TOP    == side) ? amount : 0,
                         (GM_SIDE_RIGHT  == side) ? amount : 0,
                         (GM_SIDE_BOTTOM == side) ? amount : 0);
-    
-    bool has_area() const => size.x > 0 && size.y > 0; // warning: semantic different with Dplug box2!!!
 
+    bool has_area() const => size.x > 0 && size.y > 0; // warning: semantic different with Dplug box2!!!
+    bool has_no_area() const => !has_area;
     bool has_point(const V2 point) const 
     {
         assert(gm_likely(size.x >= 0 && size.y >= 0),
@@ -1570,12 +1573,36 @@ pure nothrow @nogc @safe:
         return true;
     }
 
+    static if (isFloat)
+    {
+        bool is_equal_approx(const R other) const => p.is_equal_approx(other.p) && size.is_equal_approx(other.size);
+        bool is_finite() const => p.is_finite() && size.is_finite();
+    }
+
     T left() const => position.x; // #BONUS
     T left(T new_left)            // #BONUS
     {
         size.x += (position.x - new_left); // doesn't modify .right
         return position.x = new_left; 
-    }    
+    }
+
+    R merge(const R rect) const
+    {
+        assert (gm_likely(size.x >= 0 && size.y >= 0 && rect.size.x >= 0 && rect.size.y >= 0));
+        R r;
+        r.p = rect.p.min(p);
+        r.size = (rect.p + rect.size).max(position + size);
+        r.size = rect.size - rect.p;
+        return r;
+    }
+
+    R merge_non_empty(const R rect) const
+    {
+        R r = merge(rect);
+        if (rect.has_no_area()) return this;
+        if (has_no_area()) return rect;
+        return r;
+    }
 
     T right() const => position.x + size.x;        // #BONUS
     T right(T new_right) => size.x = new_right - position.x; // #BONUS
