@@ -1,7 +1,7 @@
 name "godot-math"
-description "Partial Port of Godot Math"
+description "Port of Godot vectors, matrices, quaternions, rectangles"
 copyright "Copyright 2025, Guillaume Piolat"
-authors "Guillaume Piolat"
+authors "Juan Linietsky" "Ariel Manzur" "Guillaume Piolat"
 license "MIT"
 targetPath "out/"
 
