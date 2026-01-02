@@ -88,16 +88,26 @@ enum : EulerOrder
     GM_EULER_ORDER_ZYX = 5, ///
 }
 
-alias Planes = int;
+alias Planes = int; ///
 enum : Planes
 {
-    GM_PLANE_NEAR   = 0,
-    GM_PLANE_FAR    = 1,
-    GM_PLANE_LEFT   = 2,
-    GM_PLANE_TOP    = 3,
-    GM_PLANE_RIGHT  = 4,
-    GM_PLANE_BOTTOM = 5
+    GM_PLANE_NEAR   = 0, ///
+    GM_PLANE_FAR    = 1, ///
+    GM_PLANE_LEFT   = 2, ///
+    GM_PLANE_TOP    = 3, ///
+    GM_PLANE_RIGHT  = 4, ///
+    GM_PLANE_BOTTOM = 5  ///
 }
+
+alias Side = int;
+enum : Side
+{
+    GM_SIDE_LEFT   = 0, ///
+    GM_SIDE_TOP    = 1, ///
+    GM_SIDE_RIGHT  = 2, ///
+    GM_SIDE_BOTTOM = 3, ///
+}
+
 
 
 
@@ -1491,9 +1501,24 @@ pure nothrow @nogc @safe:
 
     T get_area() const => size.x * size.y;
 
-    static if (isFloat)
-        V2 get_center() const => position + (size * 0.5f);
+    V2 get_center() const => position + size / 2;
 
+    R grow(T amount) const => grow_individual(amount, amount, amount, amount);
+    R grow_individual(T left, T top, T right, T bottom) const 
+    {
+		R r = this;
+		r.p.x -= left;
+		r.p.y -= top;
+		r.size.x += left + right;
+		r.size.y += top + bottom;
+        return r;
+	}
+    R grow_side(Side side, int amount) const =>
+        grow_individual((GM_SIDE_LEFT   == side) ? amount : 0,
+                        (GM_SIDE_TOP    == side) ? amount : 0,
+                        (GM_SIDE_RIGHT  == side) ? amount : 0,
+                        (GM_SIDE_BOTTOM == side) ? amount : 0);
+    
     bool has_area() const => size.x > 0 && size.y > 0; // warning: semantic different with Dplug box2!!!
 
     bool has_point(const V2 point) const 
@@ -1510,6 +1535,18 @@ pure nothrow @nogc @safe:
 
     T height() const => size.y;                    // #BONUS
     T height(T new_height) => size.y = new_height; // #BONUS
+
+    R intersection(const R rect) const 
+    {
+		R new_rect = rect;
+		if (!intersects(new_rect))
+			return R();
+		new_rect.p = rect.p.max(p);
+		V2 rect_end = rect.p + rect.size;
+		V2 end = p + size;
+		new_rect.size = rect_end.min(end) - new_rect.position;
+		return new_rect;
+	}
 
     bool intersects(const R rect, bool include_borders = false) const 
     {
