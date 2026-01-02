@@ -1,0 +1,7 @@
+orthonormalize, doesn't work.
+
+TODO:
+    from_euler avec 3 T
+    from_scale avec 3 T
+    is_equal_approx_identity et is_zero_approx pour tout
+    Basis avec 9 nombres, attention col vs row
