@@ -1436,6 +1436,8 @@ pure nothrow @nogc @safe:
         enum bool isFloat = is(T == float) || is(T == double);
         static if (isFloat)
             alias F = T;
+        else
+            alias F = float;
         alias p = position;
     }
 
@@ -1605,6 +1607,31 @@ pure nothrow @nogc @safe:
 
     T right() const => position.x + size.x;        // #BONUS
     T right(T new_right) => size.x = new_right - position.x; // #BONUS
+
+    deprecated(".scaleByFactor from dplug:math is replaced by .scale_by_factor in godot-math") alias scaleByFactor = scale_by_factor;
+    /// Scale the box by factor `scale`, and round the result to integer if needed. #BONUS
+    R scale_by_factor(F scale) const nothrow => scale_by_factor(scale, scale);
+    //ditto
+    R scale_by_factor(F scaleX, F scaleY) const nothrow
+    {
+        R r;
+        static if (isFloat)
+        {
+            r.p.x    = left()   * scaleX;
+            r.p.y    = top()    * scaleY;
+            r.size.x = right()  * scaleX - r.p.x;
+            r.size.y = bottom() * scaleY - r.p.y;
+        }
+        else
+        {
+            // FUTURE: should probably round the size instead of rounding corners...
+            r.p.x    = cast(T)( gm_round( left()   * scaleX) );
+            r.p.y    = cast(T)( gm_round( top()    * scaleY) );
+            r.size.x = cast(T)( gm_round( right()  * scaleX) ) - r.p.x;
+            r.size.y = cast(T)( gm_round( bottom() * scaleY) ) - r.p.y;
+        }
+        return r;
+    }
 
     T top() const => position.y; // #BONUS
     T top(T new_top)             // #BONUS
