@@ -1608,11 +1608,11 @@ pure nothrow @nogc @safe:
     T right() const => position.x + size.x;        // #BONUS
     T right(T new_right) => size.x = new_right - position.x; // #BONUS
 
-    deprecated(".scaleByFactor from dplug:math is replaced by .scale_by_factor in godot-math") alias scaleByFactor = scale_by_factor;
+    deprecated(".scaleByFactor from dplug:math is replaced by .scaled in godot-math") alias scaleByFactor = scaled;
     /// Scale the box by factor `scale`, and round the result to integer if needed. #BONUS
-    R scale_by_factor(F scale) const nothrow => scale_by_factor(scale, scale);
+    R scaled(F scale) const nothrow => scaled(scale, scale);
     //ditto
-    R scale_by_factor(F scaleX, F scaleY) const nothrow
+    R scaled(F scaleX, F scaleY) const nothrow
     {
         R r;
         static if (isFloat)

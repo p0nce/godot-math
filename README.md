@@ -104,16 +104,15 @@ float gm_tan(float x);
 
 - Both `float` and `double` versions exist at once, with a `***d` suffix (eg: `Projectiond`, `Vector2d`, `Rect2d`).
 - In global scope, function symbols get a `gm_` prefix.
-- `.clampf`/`.clampi` replaced by overloaded `.clamp`
-  Likewise `.snappedf` / `.snappedi` replaced by overloaded `.snapped`.
-  Same for `minf`/`mini`, `maxf`/`maxi` => replaced by `min`/`max`
-// - in Godot names "f" would mean "float", and "float" is `double` in Godot.
-//   Here when something is "float" it is actually `float` in the interface too,
-//   and same for `double`.
+- For vectors:
+   - `.clampf`/`.clampi` replaced by overloaded `.clamp`
+   - `.snappedf` / `.snappedi` replaced by overloaded `.snapped`.
+   - `.minf`/`.mini` replaced by overloaded `.min`
+   - `.maxf`/`.maxi` replaced by overloaded `.max`
 
 
 ## Small semantic differences
 
 - `Rect2`/`Rect2i`/`Rect2d` have a `.merge_non_empty` method that, in case of a union with an empty rectangle, return the other rectangle.
-- Bonus methods for rectangles, such has `.left`, `.top`, `.right`, `.bottom`.
+- Bonus methods for rectangles, such has `.left`, `.top`, `.right`, `.bottom`, `.scale`.
 - `Projection` inverse is less precise than in original Godot. You can always go double to get more precise `.inverse()`

@@ -8,3 +8,4 @@
 - is_identity_approx / is_zero_approx for all things float
 - Basis avec 9 nombres, attention col vs row
 - Rect2 transform by Transform2D, direct and indirect
+- Proper documentation that showcase matrix and vector math.
