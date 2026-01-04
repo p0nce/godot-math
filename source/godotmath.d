@@ -54,6 +54,9 @@ alias Rect2    = Rect2Impl!float;    ///
 alias Rect2i   = Rect2Impl!int;      ///
 alias Rect2d   = Rect2Impl!double;   ///
 
+alias AABB     = AABBImpl!float;     ///
+alias AABBd    = AABBImpl!double;    ///
+
 alias Quaternion  = QuaternionImpl!float;  ///
 alias Quaterniond = QuaternionImpl!double; ///
 
@@ -1678,6 +1681,93 @@ pure nothrow @nogc @safe:
         R opBinary(string op)(Transform2DImpl!T right) const if (op == "*") 
             => right.inverse().xform(this);
     } 
+}
+
+
+
+
+
+
+
+
+
+
+/*
+     █████╗  █████╗ ██████╗ ██████╗ 
+    ██╔══██╗██╔══██╗██╔══██╗██╔══██╗
+    ███████║███████║██████╔╝██████╔╝
+    ██╔══██║██╔══██║██╔══██╗██╔══██╗
+    ██║  ██║██║  ██║██████╔╝██████╔╝
+*/
+struct AABBImpl(T)
+    if (is(T == float) || is(T == double))
+{
+pure nothrow @nogc @safe:
+
+    private
+    {
+        alias A = AABBImpl!T;
+        alias V3 = Vector3Impl!T;
+        alias Elem = T;
+        alias p = position;
+    }
+
+    V3 position;
+    V3 size;
+
+    this(V3 position, V3 size)
+    {
+        this.position = position;
+        this.size = size;
+    }
+
+    A abs() const => A(position + size.min(0), size.abs());
+
+    bool encloses(const A aabb) const 
+    {
+        assert(gm_likely(size.x >= 0 && size.y >= 0 && size.z >= 0 
+                      && aabb.size.x >= 0 && aabb.size.y >= 0 && aabb.size.z >= 0),
+            "negative size AABB in .encloses");
+        V3 src_min = position;
+        V3 src_max = position + size;
+        V3 dst_min = aabb.position;
+        V3 dst_max = aabb.position + aabb.size;
+
+        return (
+            (src_min.x <= dst_min.x) &&
+            (src_max.x >= dst_max.x) &&
+            (src_min.y <= dst_min.y) &&
+            (src_max.y >= dst_max.y) &&
+            (src_min.z <= dst_min.z) &&
+            (src_max.z >= dst_max.z));
+    }
+
+    A expand(const V3 point) const 
+    {
+        A r = this;
+        r.expand_to(point);
+        return r;
+    }
+
+    //deprecated("expand doesn't exist for AABB. Do you mean .merge(AABB) or merge_non_empty(AABB) instead?") alias expand = merge;
+
+    private void expand_to(V3 point) 
+    {
+        assert(gm_likely(size.x >= 0 && size.y >= 0 && size.z >= 0),
+               "negative size rectangle in .expand");
+        V3 begin = p;
+        V3 end = p + size;
+
+        if (point.x < begin.x) begin.x = point.x;
+        if (point.y < begin.y) begin.y = point.y;
+        if (point.z < begin.z) begin.z = point.z;
+        if (point.x > end.x) end.x = point.x;
+        if (point.y > end.y) end.y = point.y;
+        if (point.z > end.z) end.z = point.z;
+        position = begin;
+        size = end - begin;
+    }
+
 }
 
 
@@ -4229,6 +4319,7 @@ enum bool isVector2Impl(T)     = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T)     = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T)     = is(T : Vector4Impl!U, U...);
 enum bool isRect2Impl(T)       = is(T : Rect2Impl!U, U...);
+enum bool isAABB2Impl(T)       = is(T : AABBImpl!U, U...);
 enum bool isQuaternionImpl(T)  = is(T : QuaternionImpl!U, U...);
 enum bool isTransform2DImpl(T) = is(T : Transform2DImpl!U, U...);
 enum bool isTransform3DImpl(T) = is(T : Transform3DImpl!U, U...);
