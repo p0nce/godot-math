@@ -1609,6 +1609,8 @@ pure nothrow @nogc @safe:
         return r;
     }
 
+    inout(T)* ptr() inout return => p.ptr;
+
     T right() const => position.x + size.x;        // #BONUS
     T right(T new_right) => size.x = new_right - position.x; // #BONUS
 
@@ -2083,7 +2085,7 @@ pure nothrow @nogc @safe:
         return this;
     }
 
-    ref inout(T) opIndex(size_t n) inout => array[n];
+    ref inout(T) opIndex(size_t n) inout return => array[n];
     Q opUnary(string op)() const if (op == "+") => this;
     Q opUnary(string op)() const if (op == "-") => Q(-x, -y, -z, -w);
 }
@@ -2262,6 +2264,8 @@ pure nothrow @nogc @safe:
         return r;
     }
 
+    inout(T)* ptr() inout return => columns[0].ptr;
+
     T2D rotated(float angle) const => T2D(angle, V2.ZERO) * this; /// Equivalent to left multiplication
     T2D rotated_local(float angle) const => this * T2D(angle, V2.ZERO); /// Equivalent to right multiplication
 
@@ -2319,6 +2323,8 @@ pure nothrow @nogc @safe:
     }
 
     // operators
+    ref inout(V2) opIndex(size_t n) inout return => columns[n];
+    
     V2 opBinary(string op)(const V2 v) const if (op == "*") => xform(v);
 
     T2D opBinary(string op)(const T2D transform) const if (op == "*")
@@ -2869,7 +2875,13 @@ pure nothrow @nogc @safe:
         set_column(2, z);
     }
 
+    inout(T)* ptr() inout return => rows[0].ptr;
+
     private void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
+    private void rotate(const Q quaternion)
+    {
+        this = B(quaternion) * this;
+    }
     B rotated(const V3 axis, T angle) const => B(axis, angle) * this;
 
     private void scale(const V3 scale)
@@ -2919,11 +2931,6 @@ pure nothrow @nogc @safe:
     {
         _set_diagonal(scale);
         rotate(quaternion);
-    }
-
-    private void rotate(const Q quaternion)
-    {
-        this = B(quaternion) * this;
     }
 
     B slerp(B to, T weight) const
@@ -3082,7 +3089,7 @@ pure nothrow @nogc @safe:
     }
 
     // operators
-    V3 opIndex(size_t n) const => rows[n];
+    ref inout(V3) opIndex(size_t n) inout return => rows[n];
 
     B opBinary(string op)(const B m) const if (op == "*")
         => B(m.tdotx(rows[0]), m.tdoty(rows[0]), m.tdotz(rows[0]),
@@ -3231,6 +3238,8 @@ pure nothrow @nogc @safe:
         t.orthonormalize();
         return t;
     }
+
+    inout(T)* ptr() inout return => basis.ptr;
 
     private void rotate(const V3 axis, T angle) { this = rotated(axis, angle); }
     T3D rotated(const V3 axis, T angle) const 
@@ -3870,6 +3879,8 @@ pure nothrow @nogc @safe:
         return proj;
     }
 
+    inout(T)* ptr() inout return => m.ptr;
+
     private void set_depth_correction(bool flip_y = true, bool reverse_z  =true, bool remap_z = true)
     {
         m[0] = 1;
@@ -4074,6 +4085,7 @@ pure nothrow @nogc @safe:
     }
 
     // operators
+    ref inout(V4) opIndex(size_t n) inout return => columns[n];
 
     T3D opCast(U : T3D)() const => T3D(this);
     V4 opBinary(string op)(const V4 v) const if (op == "*") => xform(v);    

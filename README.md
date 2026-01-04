@@ -41,14 +41,16 @@ A `Basis` is a 3x3 matrix that only deals with base change / rotation.
 | Vector4i  | ✅ | 4D `int` vector or point | [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html) |
 | Rect2  | ✅ | 2D `float` rectangle | [Rect2](https://docs.godotengine.org/en/stable/classes/class_rect2.html) |
 | Rect2i  | ✅ | 2D `int` rectangle | [Rect2i](https://docs.godotengine.org/en/stable/classes/class_rect2i.html) |
-| Transform2D | ✅ | 2x3 matrix | [Transform2D](https://docs.godotengine.org/en/stable/classes/class_transform2d.html) |
-| Basis | ✅ | 3x3 matrix | [Basis](https://docs.godotengine.org/en/stable/classes/class_basis.html)
-| Transform3D | ✅ | 3x4 matrix | [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) |
-| Projection | ✅ | 4x4 matrix | [Projection](https://docs.godotengine.org/en/stable/classes/class_projection.html) |
+| Transform2D | ✅ | 2x3 matrix (column-major) | [Transform2D](https://docs.godotengine.org/en/stable/classes/class_transform2d.html) |
+| Basis | ✅ | 3x3 matrix (row-major) | [Basis](https://docs.godotengine.org/en/stable/classes/class_basis.html)
+| Transform3D | ✅ | 3x4 matrix (row-major) | [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) |
+| Projection | ✅ | 4x4 matrix (column-major) | [Projection](https://docs.godotengine.org/en/stable/classes/class_projection.html) |
 | Plane | ❌ | 3D Plane matrix | [Plane](https://docs.godotengine.org/en/stable/classes/class_plane.html) |
 | AABB | ❌ | 3D bounding box | [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) |
 
-
+Basis: Row-major storage (but conceptually column-major, stored transposed)
+Transform2D: Column-major storage
+Projection: Column-major storage
 
 ### Math functions
 
