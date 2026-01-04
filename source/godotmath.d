@@ -1501,7 +1501,11 @@ pure nothrow @nogc @safe:
 
     // Dplug transition
     deprecated(".contains doesn't exist for Rect2, do you mean .encloses(rect) or .has_point(point)?")
-    alias contains = encloses;    
+    alias contains = encloses;
+
+    // #BONUS Build a rectangle from extrema points.
+    static R from_corners(V2 top_left, V2 bottom_right) => R(top_left, bottom_right - top_left);
+    static R from_corners(T left, T top, T right, T bottom) => R(left, top, right-left, bottom-top); 
 
     T get_area() const => size.x * size.y;
 
@@ -4069,6 +4073,9 @@ pure nothrow @nogc @safe:
         return r;
     }
 
+    // operators
+
+    T3D opCast(U : T3D)() const => T3D(this);
     V4 opBinary(string op)(const V4 v) const if (op == "*") => xform(v);    
     P opBinary(string op)(const P matrix) const if (op == "*")
     {

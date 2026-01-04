@@ -1,8 +1,5 @@
-- orthonormalize, doesn't work?
- translate AABB
+- translate AABB
 - translate Plane
-- cast from Projection to Transform3D
-- Rect shall have scaleByFactor method (as deprecated alias to scale_by_factor) same as in dplug:math
 - from_euler with 3 T (???)
 - from_scale avec 3 T (???)
 - is_identity_approx / is_zero_approx for all things float

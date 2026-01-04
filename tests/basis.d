@@ -125,3 +125,16 @@ unittest
     assert((B * invB).is_equal_approx(Basis.IDENTITY));
     assert((invB * B).is_equal_approx(Basis.IDENTITY));
 }
+
+@("Basis orthonormalized")
+unittest
+{
+    Basis B = Basis(Vector3(-0.9, -0.25,  0.15),
+                    Vector3(-0.6,  -0.5,  0.1),
+                    Vector3( 0.1, -0.25,  0.15));
+    B = B.orthonormalized();
+    import std.stdio;
+    debug writeln(B);
+    assert(B.is_conformal);
+    assert(B.is_rotation);
+}
