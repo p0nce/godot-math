@@ -78,9 +78,6 @@ A `Basis` is a 3x3 matrix that only deals with base change / rotation.
 | Plane | ✅ | 3D Plane matrix | [Plane](https://docs.godotengine.org/en/stable/classes/class_plane.html) |
 | AABB | ✅ | 3D bounding box | [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) |
 
-Basis: Row-major storage (but conceptually column-major, stored transposed)
-Transform2D: Column-major storage
-Projection: Column-major storage
 
 ### Math functions
 
