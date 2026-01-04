@@ -90,6 +90,15 @@ enum : EulerOrder
     GM_EULER_ORDER_ZYX = 5, ///
 }
 
+alias Corner = int; ///
+enum : Corner 
+{
+    GM_CORNER_TOP_LEFT,
+    GM_CORNER_TOP_RIGHT,
+    GM_CORNER_BOTTOM_RIGHT,
+    GM_CORNER_BOTTOM_LEFT
+};
+
 alias Planes = int; ///
 enum : Planes
 {
@@ -1742,6 +1751,8 @@ pure nothrow @nogc @safe:
             (src_max.z >= dst_max.z));
     }
 
+    V3 end() const => p + size;
+
     A expand(const V3 point) const 
     {
         A r = this;
@@ -1768,6 +1779,24 @@ pure nothrow @nogc @safe:
         size = end - begin;
     }
 
+    V3 get_center() const => p + size * 0.5f;
+
+    V3 get_endpoint(int idx) const
+    {
+        assert(idx >= 0 && idx < 8);
+        switch (idx) 
+        {
+            case 0: return V3(p.x, p.y, p.z);
+            case 1: return V3(p.x, p.y, p.z + size.z);
+            case 2: return V3(p.x, p.y + size.y, p.z);
+            case 3: return V3(p.x, p.y + size.y, p.z + size.z);
+            case 4: return V3(p.x + size.x, p.y, p.z);
+            case 5: return V3(p.x + size.x, p.y, p.z + size.z);
+            case 6: return V3(p.x + size.x, p.y + size.y, p.z);
+            case 7: return V3(p.x + size.x, p.y + size.y, p.z + size.z);
+            default: assert(0);
+        }
+    }
 }
 
 
