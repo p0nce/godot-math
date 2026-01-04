@@ -1827,7 +1827,7 @@ pure nothrow @nogc @safe:
         {
             axis = 2;
         }
-	    return axis;
+        return axis;
     }
 
     T get_longest_axis_size() const 
@@ -1984,7 +1984,7 @@ pure nothrow @nogc @safe:
     bool is_finite() const => position.is_finite() && size.is_finite();
 
 
-    A merge(const A aabb)
+    A merge(const A aabb) const
     {
         check_size_is_positive(this);
         check_size_is_positive(aabb);
