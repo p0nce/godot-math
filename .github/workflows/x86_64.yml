@@ -1,0 +1,38 @@
+name: x86_64
+on: [push, pull_request]
+
+jobs:
+    test:
+        name: Dub Tests
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest, macOS-latest]
+                dc: 
+                    - dmd-latest
+                    - ldc-latest
+                    - ldc-1.41.0
+                exclude:
+                    - dc: dmd-latest
+                      os: macOS-latest
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install D compiler
+              uses: dlang-community/setup-dlang@v2
+              with:
+                  compiler: ${{ matrix.dc }}
+
+            - name: Unittest with default configuration
+              run: dub test
+
+#            - name: Unittest with unittest-release configuration
+#              run: dub test -b unittest-release
+#
+#            - name: Unittest with unittest-inst configuration
+#              run: dub test -b unittest-inst
+#
+#            - name: Unittest with unittest-release-inst configuration
+#              run: dub test -b unittest-release-inst
+              
