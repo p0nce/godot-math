@@ -16,6 +16,20 @@
 dependency "godot-math" version="~>1.0"
 ```
 
+## Example
+
+**Transform a point in 2D:**
+
+**Transform a point in 3D:**
+```d
+auto proj = Projection.create_perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
+
+// Transform a 3D point
+Vector4 point = Vector4(5.0f, 3.0f, 10.0f, 1.0f);
+Vector4 projected = proj * point;  // Apply projection transform
+```
+
+The `Projection` matrix handles the perspective divide automatically, converting 3D world coordinates to normalized device coordinates for rendering.
 
 ## Why?
 
