@@ -1,5 +1,5 @@
 name "godot-math"
-description "Port of Godot vectors, matrices, quaternions, rectangles"
+description "Port of Godot vectors, matrices, quaternions, rectangles to D"
 copyright "Copyright 2025, Guillaume Piolat"
 authors "Juan Linietsky" "Ariel Manzur" "Guillaume Piolat"
 license "MIT"

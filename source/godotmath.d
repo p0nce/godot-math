@@ -1674,6 +1674,12 @@ pure nothrow @nogc @safe:
         else
             static assert(false);
     }
+
+    static if (isFloat)
+    {
+        R opBinary(string op)(Transform2DImpl!T right) const if (op == "*") 
+            => right.inverse().xform(this);
+    } 
 }
 
 
@@ -2126,6 +2132,7 @@ pure nothrow @nogc @safe:
     private
     {
         alias V2 = Vector2Impl!T;
+        alias R = Rect2Impl!T;
         alias Elem = T;
         alias T2D = Transform2DImpl!T;
     }
@@ -2329,6 +2336,19 @@ pure nothrow @nogc @safe:
     T2D translated_local(const V2 offset) const => T2D(x, y, origin + basis_xform(offset));
 
     V2 xform(const V2 vec) const => V2(tdotx(vec), tdoty(vec)) + origin;
+    R xform(const R rect) const 
+    {
+        V2 x = columns[0] * rect.size.x;
+        V2 y = columns[1] * rect.size.y;
+        V2 pos = xform(rect.position);
+
+        R new_rect;
+        new_rect.position = pos;
+        new_rect.expand_to(pos + x);
+        new_rect.expand_to(pos + y);
+        new_rect.expand_to(pos + x + y);
+        return new_rect;
+    }
     V2 xform_inv(const V2 vec) const
     {
         V2 v = vec - origin;
@@ -2356,7 +2376,7 @@ pure nothrow @nogc @safe:
     ref inout(V2) opIndex(size_t n) inout return => columns[n];
     
     V2 opBinary(string op)(const V2 v) const if (op == "*") => xform(v);
-
+    R opBinary(string op)(const R rect) const if (op == "*") => xform(rect);
     T2D opBinary(string op)(const T2D transform) const if (op == "*")
     {
         T2D t = this;

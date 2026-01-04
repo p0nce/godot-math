@@ -55,9 +55,13 @@ unittest
     assert(a.size == Vector2i(110, 140));
     
     assert(!Rect2(0, 0, 0, 0).has_area());
-   // assert(!Rect2i(0, 0, 0, 0).has_area());
-    //assert(Rect2(0, 2, 1, -1).has_area());
-    //assert(Rect2(0, 0, 1, 1).has_area());
+    assert(Rect2i(0, 0, 1, 1).has_area());
+
+    Transform2D T;
+    Rect2 C = Rect2(0, 0, 4, 5);
+    C = T * C;
+    C = C * T;
+    assert(C.is_equal_approx(Rect2(0, 0, 4, 5)));
 }
 
 @("Rect2 abs")

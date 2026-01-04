@@ -1,5 +1,2 @@
 - translate AABB
 - translate Plane
-- from_euler with 3 T (???)
-- from_scale avec 3 T (???)
-- Rect2 transform by Transform2D, direct and indirect

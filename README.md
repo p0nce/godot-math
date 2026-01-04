@@ -5,6 +5,7 @@
  ➡️ [See Godot Math documentation](https://docs.godotengine.org/en/stable/tutorials/math/index.html)
 
 
+Using [DUB](https://code.dlang.org/) you can add it to your project with:
 ```json
 "dependencies":
 {
@@ -16,12 +17,25 @@
 dependency "godot-math" version="~>1.0"
 ```
 
-## Example
+## Examples
 
 **Transform a point in 2D:**
+```d
+import godotmath;
+
+// Create a Vector2
+Vector2 v = Vector2(2.0f, 3.0f);
+
+// Create a Transform2D: rotation by 45 degrees and translate by (1, 1)
+float angle = GM_PI / 4;
+Transform2D t2d = Transform2D(angle, Vector2(1, 1));
+Vector2 v2 = t2d * v; // Apply the transform
+```
 
 **Transform a point in 3D:**
 ```d
+import godotmath;
+
 auto proj = Projection.create_perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
 
 // Transform a 3D point
