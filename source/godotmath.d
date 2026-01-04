@@ -132,20 +132,18 @@ this is a workaround, also provide float/double overloads.
 // See: https://docs.godotengine.org/en/stable/classes/class_%40globalscope.html
 // Those are math functions defined at global scope in Godot Math, so here they
 // are prefixed with a gm_*** prefix to avoid polluting global namespace.
-
+// Not all were ported, just the ones that are used for math types.
 
 
 // Godot math constants
-// TODO: use the better constants from std.math, like PI with hex float precision**
-// Phobos constants have more precision than Godot's ones.
-enum double GM_SQRT2  = 1.4142135623730950488016887242;
+enum double GM_SQRT2  = 0x1.6a09e667f3bcc908b2fb1366ea958p+0L;
 enum double GM_SQRT3  = 1.7320508075688772935274463415059;
-enum double GM_SQRT12 = 0.7071067811865475244008443621048490;
+enum double GM_SQRT12 = GM_SQRT2/2;
 enum double GM_SQRT13 = 0.57735026918962576450914878050196;
-enum double GM_LN2    = 0.6931471805599453094172321215;
-enum double GM_TAU    = 6.2831853071795864769252867666;
+enum double GM_LN2    = 0x1.62e42fefa39ef35793c7673007e5fp-1L;
+enum double GM_TAU    = 2*GM_PI;
 enum double GM_PI     = 0x1.921fb54442d18469898cc51701b84p+1;
-enum double GM_E      = 2.7182818284590452353602874714;
+enum double GM_E      = 0x1.5bf0a8b1457695355fb8ac404e7a8p+1L; /** e = 2.718281... */
 enum double GM_INF    = double.infinity;
 enum double GM_NaN    = double.nan;
 
@@ -1155,7 +1153,7 @@ pure nothrow @nogc @safe:
  ╚████╔╝ ███████╗╚██████╗   ██║   ╚██████╔╝██║  ██║     ██║
   ╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝     ╚═╝
 */
-/// See also: 
+/// See_also: https://docs.godotengine.org/en/stable/classes/class_vector4.html
 struct Vector4Impl(T) 
     if (is(T == int) || is(T == float) || is(T == double))
 {
@@ -3478,7 +3476,7 @@ pure nothrow @nogc @safe:
         return p;
     }
 
-    //TODO Projection create_fit_aabb(aabb: AABB) static
+    // TODO Projection create_fit_aabb(aabb: AABB) static
 
     static P create_for_hmd(int eye, T aspect, T intraocular_dist, T display_width, T display_to_lens, T oversample, T z_near, T z_far)
     {
@@ -3624,7 +3622,7 @@ pure nothrow @nogc @safe:
         return for_pixel_width / width;
     }
 
-    //TODO Plane get_projection_plane(plane: int) const 
+    // TODO Plane get_projection_plane(plane: int) const 
 
     V2 get_viewport_half_extents() const
     {
