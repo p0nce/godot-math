@@ -33,48 +33,50 @@ version(LDC) import ldc.intrinsics; // for likely/unlikely
 pure nothrow @nogc @safe:
 
 // Provide both float and double versions, should the need arise.
-alias Vector2  = Vector2Impl!float;  ///
-alias Vector2i = Vector2Impl!int;    ///
-alias Vector2d = Vector2Impl!double; ///
+alias Vector2  = Vector2Impl!float;          ///
+alias Vector2i = Vector2Impl!int;            ///
+alias Vector2d = Vector2Impl!double;         ///
 
-alias Size2    = Vector2; ///
-alias Point2   = Vector2; ///
-alias Size2i   = Vector2i; /// #BONUS, for semantic
-alias Point2i  = Vector2i; /// #BONUS, for semantic
+alias Size2    = Vector2;                    ///
+alias Point2   = Vector2;                    ///
+alias Size2i   = Vector2i;                   /// #BONUS
+alias Point2i  = Vector2i;                   /// #BONUS
 
-alias Vector3  = Vector3Impl!float;  ///
-alias Vector3i = Vector3Impl!int;    ///
-alias Vector3d = Vector3Impl!double; ///
+alias Vector3  = Vector3Impl!float;          ///
+alias Vector3i = Vector3Impl!int;            ///
+alias Vector3d = Vector3Impl!double;         ///
 
-alias Vector4  = Vector4Impl!float;  ///
-alias Vector4i = Vector4Impl!int;    ///
-alias Vector4d = Vector4Impl!double; ///
+alias Vector4  = Vector4Impl!float;          ///
+alias Vector4i = Vector4Impl!int;            ///
+alias Vector4d = Vector4Impl!double;         ///
 
-alias Rect2    = Rect2Impl!float;    ///
-alias Rect2i   = Rect2Impl!int;      ///
-alias Rect2d   = Rect2Impl!double;   ///
+alias Rect2    = Rect2Impl!float;            ///
+alias Rect2i   = Rect2Impl!int;              ///
+alias Rect2d   = Rect2Impl!double;           ///
 
-alias AABB     = AABBImpl!float;     ///
-alias AABBd    = AABBImpl!double;    ///
+alias AABB     = AABBImpl!float;             ///
+alias AABBd    = AABBImpl!double;            ///
+alias Plane    = PlaneImpl!float;            ///
+alias Planed   = PlaneImpl!double;           ///
 
-alias Quaternion  = QuaternionImpl!float;  ///
-alias Quaterniond = QuaternionImpl!double; ///
+alias Quaternion  = QuaternionImpl!float;    ///
+alias Quaterniond = QuaternionImpl!double;   ///
 
-// 2x3 matrix
+// 2x3 matrix (column-major)
 alias Transform2D  = Transform2DImpl!float;  ///
 alias Transform2Dd = Transform2DImpl!double; ///
 
-// 3x3 matrix
-alias Basis    = BasisImpl!float;  ///
-alias Basisd   = BasisImpl!double; ///
+// 3x3 matrix (row-major)
+alias Basis    = BasisImpl!float;            ///
+alias Basisd   = BasisImpl!double;           ///
 
-// 3x4 matrix
+// 3x4 matrix (row-major)
 alias Transform3D  = Transform3DImpl!float;  ///
 alias Transform3Dd = Transform3DImpl!double; ///
 
-// 4x4 matrix
-alias Projection  = ProjectionImpl!float;  ///
-alias Projectiond = ProjectionImpl!double; ///
+// 4x4 matrix (column-major)
+alias Projection  = ProjectionImpl!float;    ///
+alias Projectiond = ProjectionImpl!double;   ///
 
 
 
@@ -90,14 +92,21 @@ enum : EulerOrder
     GM_EULER_ORDER_ZYX = 5, ///
 }
 
-alias Corner = int; ///
+alias ClockDirection = int; ///
+enum : ClockDirection 
+{
+    GM_CLOCKWISE,
+    GM_COUNTERCLOCKWISE
+};
+
+/*alias Corner = int; ///
 enum : Corner 
 {
     GM_CORNER_TOP_LEFT,
     GM_CORNER_TOP_RIGHT,
     GM_CORNER_BOTTOM_RIGHT,
     GM_CORNER_BOTTOM_LEFT
-};
+};*/
 
 alias Planes = int; ///
 enum : Planes
@@ -1470,7 +1479,7 @@ pure nothrow @nogc @safe:
 
     R abs() const => R(position + size.min(0), size.abs());
 
-    T bottom() const => position.y + size.y;        // #BONUS
+    T bottom() const => position.y + size.y;                    // #BONUS
     T bottom(T new_bottom) => size.y = new_bottom - position.y; // #BONUS
 
     bool encloses(const R rect) const 
@@ -2008,6 +2017,17 @@ pure nothrow @nogc @safe:
     }
 
     //operators
+    U opCast(U)() const if (isAABBImpl!U)
+    {
+        static if (is(U.Elem == float))
+            return U(Vector3Impl!float(cast(float)p.x, cast(float)p.y, cast(float)p.z), 
+                     Vector3Impl!float(cast(float)size.x, cast(float)size.y, cast(float)size.z));
+        else static if (is(U.Elem == double))
+            return U(Vector3Impl!double(cast(double)p.x, cast(double)p.y, cast(double)p.z),
+                     Vector3Impl!double(cast(double)size.x, cast(double)size.y, cast(double)size.z));
+        else
+            static assert(0);
+    }
     inout(T*) ptr() inout return => position.ptr;
     A opBinary(string op)(const Transform3DImpl!T transform) const if (op == "*") => transform.inverse() * this;
 }
@@ -2447,6 +2467,152 @@ pure nothrow @nogc @safe:
 
 
 /*
+    ██████╗ ██╗      █████╗ ███╗   ██╗███████╗
+    ██╔══██╗██║     ██╔══██╗████╗  ██║██╔════╝
+    ██████╔╝██║     ███████║██╔██╗ ██║█████╗  
+    ██╔═══╝ ██║     ██╔══██║██║╚██╗██║██╔══╝  
+    ██║     ███████╗██║  ██║██║ ╚████║███████╗
+    ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
+*/
+struct PlaneImpl(T)
+    if (is(T == float) || is(T == double))
+{
+pure nothrow @nogc @safe:
+
+    private
+    {
+        alias V3 = Vector3Impl!T;
+        alias Elem = T;     
+        alias P = PlaneImpl!T;
+    }
+     
+    union
+    {
+        V3 normal;
+        struct
+        {
+            T x;
+            T y;
+            T z;
+        }
+    }
+	T d = 0;
+
+    this(T a, T b, T c, T d)
+    {
+        normal = V3(a, b, c);
+        this.d = d;
+    }
+
+    this(V3 normal, T d = 0)
+    {
+        this.normal = normal;
+        this.d = d;
+    }
+
+    this(V3 normal, V3 point)
+    {
+        this.normal = normal;
+        this.d = normal.dot(point);
+    }
+
+    this(const V3 p1, const V3 p2, const V3 p3, ClockDirection dir = GM_CLOCKWISE)
+    {
+        if (dir == GM_CLOCKWISE)
+            normal = (p1 - p3).cross(p1 - p2);
+        else
+            normal = (p1 - p2).cross(p1 - p3);
+        normal.normalize();
+        d = normal.dot(p1);
+    }
+
+    T distance_to(const V3 point) const => normal.dot(point) - d;
+    V3 get_center() const => normal * d;
+    bool has_point(const V3 point, T tolerance = 1e-5f) const => gm_abs(distance_to(point)) <= tolerance;
+
+    bool intersect_3(const P plane1, const P plane2, out V3 result) const 
+    {
+	    const P plane0 = this;
+        V3 normal0 = plane0.normal;
+        V3 normal1 = plane1.normal;
+        V3 normal2 = plane2.normal;
+	    T denom = normal0.cross(normal1).dot(normal2);
+        if (gm_is_zero_approx(denom))
+            return false;
+
+		result = (normal1.cross(normal2) * plane0.d +
+                  normal2.cross(normal0) * plane1.d +
+                  normal0.cross(normal1) * plane2.d ) / denom;
+        return true;
+	}	
+
+    bool intersects_ray(const V3 from, const V3 dir, out V3 intersection) const 
+    {
+        V3 segment = dir;
+        T den = normal.dot(segment);
+        if (gm_is_zero_approx(den)) return false;
+        T dist = (normal.dot(from) - d) / den;
+        if (dist > cast(T)GM_CMP_EPSILON) //this is a ray, before the emitting pos (from) doesn't exist
+            return false;
+        dist = -dist;
+        intersection = from + segment * dist;
+        return true;
+    }
+
+    bool intersects_segment(const V3 begin, const V3 end, out V3 intersection) const 
+    {
+        V3 segment = begin - end;
+        T den = normal.dot(segment);
+        if (gm_is_zero_approx(den)) return false;
+        T dist = (normal.dot(begin) - d) / den;
+        if (dist < cast(T)-GM_CMP_EPSILON || dist > (1.0f + cast(T)GM_CMP_EPSILON))
+            return false;
+        dist = -dist;
+        intersection = begin + segment * dist;
+        return true;
+    }
+
+    bool is_equal_approx(const P plane) const => normal.is_equal_approx(plane.normal) && gm_is_equal_approx(d, plane.d);
+    bool is_finite() const => normal.is_finite() && gm_is_finite(d);
+    bool is_point_over(V3 point) const => normal.dot(point) > d;
+
+    P normalized() const
+    {
+        P p = this;
+        p.normalize();
+        return p;
+    }
+
+    void normalize()
+    {
+        T len = normal.length();
+        if (len == 0) 
+        {
+            this = P(0, 0, 0, 0);
+            return;
+        }
+        normal /= len;
+    	d /= len;
+    }
+    V3 project(const V3 point) const => point - normal * distance_to(point);
+
+    // operators
+    inout(T)* ptr() inout return => normal.ptr;
+    P opBinary(string op)(const P plane) const if (op == "+") => this;
+    P opBinary(string op)(const P plane) const if (op == "-") => P(-normal, -d);
+    P opBinary(string op)(const T3D transform) const if (op == "*") => transform.affine_inverse() * this;
+}
+ 
+
+
+
+
+
+
+
+
+
+/*
     ████████╗██████╗  █████╗ ███╗   ██╗███████╗███████╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ 
     ╚══██╔══╝██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔════╝██╔═══██╗██╔══██╗████╗ ████║╚════██╗██╔══██╗
        ██║   ██████╔╝███████║██╔██╗ ██║███████╗█████╗  ██║   ██║██████╔╝██╔████╔██║ █████╔╝██║  ██║
@@ -2678,7 +2844,8 @@ pure nothrow @nogc @safe:
         new_rect.expand_to(pos + y);
         new_rect.expand_to(pos + x + y);
         return new_rect;
-    }
+    }    
+
     V2 xform_inv(const V2 vec) const
     {
         V2 v = vec - origin;
@@ -3513,6 +3680,7 @@ pure nothrow @nogc @safe:
         alias A    = AABBImpl!T;
         alias B    = BasisImpl!T;
         alias Q    = QuaternionImpl!T;
+        alias PL   = PlaneImpl!T;
         alias T3D  = Transform3DImpl!T;
         alias Elem = T;
     }
@@ -3693,6 +3861,30 @@ pure nothrow @nogc @safe:
         r.position = tmin;
         r.size = tmax - tmin;
         return r;
+    }
+    PL xform(const PL plane) const
+    {
+        // Neither the plane regular xform or xform_inv are particularly efficient,
+        // as they do a basis inverse. For xforming a large number
+        // of planes it is better to pre-calculate the inverse transpose basis once
+        // and reuse it for each plane, by using the 'fast' version of the functions.
+        B b = basis.inverse();
+        b.transpose();
+        return xform_fast(plane, b);
+    }
+
+    PL xform_fast(const PL plane, const B basis_inverse_transpose) const 
+    {
+        // Transform a single point on the plane.
+        V3 point = plane.normal * plane.d;
+        point = xform(point);
+
+        // Use inverse transpose for correct normals with non-uniform scaling.
+        V3 normal = basis_inverse_transpose.xform(plane.normal);
+        normal.normalize();
+
+        T d = normal.dot(point);
+        return PL(normal, d);
     }
 
     // operators
@@ -4597,7 +4789,8 @@ enum bool isVector2Impl(T)     = is(T : Vector2Impl!U, U...);
 enum bool isVector3Impl(T)     = is(T : Vector3Impl!U, U...);
 enum bool isVector4Impl(T)     = is(T : Vector4Impl!U, U...);
 enum bool isRect2Impl(T)       = is(T : Rect2Impl!U, U...);
-enum bool isAABB2Impl(T)       = is(T : AABBImpl!U, U...);
+enum bool isAABBImpl(T)       = is(T : AABBImpl!U, U...);
+enum bool isPlaneImpl(T)       = is(T : PlaneImpl!U, U...);
 enum bool isQuaternionImpl(T)  = is(T : QuaternionImpl!U, U...);
 enum bool isTransform2DImpl(T) = is(T : Transform2DImpl!U, U...);
 enum bool isTransform3DImpl(T) = is(T : Transform3DImpl!U, U...);

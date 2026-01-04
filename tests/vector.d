@@ -258,6 +258,8 @@ unittest
     assert(Rect2d.sizeof == 32);
     assert(AABB.sizeof == 24);
     assert(AABBd.sizeof == 48);
+    assert(Plane.sizeof == 16);
+    assert(Planed.sizeof == 32);
     assert(Quaternion.sizeof == 16);
     assert(Quaterniond.sizeof == 32);
     assert(Transform2D.sizeof == 24);
