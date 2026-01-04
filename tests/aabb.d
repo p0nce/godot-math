@@ -74,3 +74,13 @@ unittest
     assert(intersection.position == Vector3(2.0, 0.0, 2.0));
     assert(intersection.size == Vector3(3.0, 2.0, 4.0));
 }
+
+@("AABB * Transform3D")
+unittest
+{
+    AABB box = AABB(Vector3(0, 0, 0), Vector3(5, 2, 8));
+    Transform3D T = Transform3D.IDENTITY.rotated(Vector3(0, 1, 0.2).normalized, 0.1);//.translated(Vector3(1, 2, 3));
+    AABB transformed = T * box;
+    AABB dest = transformed * T;
+    assert(dest.encloses(box));
+}

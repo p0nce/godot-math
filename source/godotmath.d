@@ -1975,6 +1975,41 @@ pure nothrow @nogc @safe:
     {
         assert(gm_likely(aabb.size.x >= 0 && aabb.size.y >= 0 && aabb.size.z >= 0), "negative size AABB");
     }
+
+    // TODO bool intersects_plane(plane: Plane) const
+    // TODO bool intersects_ray(from: Vector3, dir: Vector3) const
+    // TODO bool intersects_segment(from: Vector3, to: Vector3) const
+
+    bool is_equal_approx(A aabb) const => position.is_equal_approx(aabb.position) && size.is_equal_approx(aabb.size);
+    bool is_finite() const => position.is_finite() && size.is_finite();
+
+
+    A merge(const A aabb)
+    {
+        check_size_is_positive(this);
+        check_size_is_positive(aabb);
+        V3 beg_1, beg_2;
+        V3 end_1, end_2;
+        V3 min, max;
+        beg_1 = position;
+        beg_2 = aabb.position;
+        end_1 = size + beg_1;
+        end_2 = aabb.size + beg_2;
+        min.x = (beg_1.x < beg_2.x) ? beg_1.x : beg_2.x;
+        min.y = (beg_1.y < beg_2.y) ? beg_1.y : beg_2.y;
+        min.z = (beg_1.z < beg_2.z) ? beg_1.z : beg_2.z;
+        max.x = (end_1.x > end_2.x) ? end_1.x : end_2.x;
+        max.y = (end_1.y > end_2.y) ? end_1.y : end_2.y;
+        max.z = (end_1.z > end_2.z) ? end_1.z : end_2.z;
+        A r;
+        r.position = min;
+        r.size = max - min;
+        return r;
+    }
+
+    //operators
+    inout(T*) ptr() inout return => position.ptr;
+    A opBinary(string op)(const Transform3DImpl!T transform) const if (op == "*") => transform.inverse() * this;
 }
 
 
@@ -3475,6 +3510,7 @@ pure nothrow @nogc @safe:
     private
     {
         alias V3   = Vector3Impl!T;
+        alias A    = AABBImpl!T;
         alias B    = BasisImpl!T;
         alias Q    = QuaternionImpl!T;
         alias T3D  = Transform3DImpl!T;
@@ -3628,6 +3664,37 @@ pure nothrow @nogc @safe:
                                      basis[1].dot(v) + origin.y,
                                      basis[2].dot(v) + origin.z);
 
+    A xform(const A aabb) const
+    {
+        /* https://dev.theomader.com/transform-bounding-boxes/ */
+        V3 min = aabb.position;
+        V3 max = aabb.position + aabb.size;
+        V3 tmin, tmax;
+        for (int i = 0; i < 3; i++) 
+        {
+            tmin[i] = tmax[i] = origin[i];
+            for (int j = 0; j < 3; j++) 
+            {
+                T e = basis[i][j] * min[j];
+                T f = basis[i][j] * max[j];
+                if (e < f) 
+                {
+                    tmin[i] += e;
+                    tmax[i] += f;
+                } 
+                else 
+                {
+                    tmin[i] += f;
+                    tmax[i] += e;
+                }
+            }
+        }
+        A r;
+        r.position = tmin;
+        r.size = tmax - tmin;
+        return r;
+    }
+
     // operators
 
     U opCast(U)() const if (isTransform3DImpl!U)
@@ -3661,6 +3728,7 @@ pure nothrow @nogc @safe:
         return this;
     }
     V3 opBinary(string op)(const V3 v) const if (op == "*") => xform(v);
+    AABBImpl!T opBinary(string op)(const AABBImpl!T aabb) const if (op == "*") => xform(aabb);
     T3D opBinary(string op)(const T fact) const if (op == "*")
     {
         T3D r = this;
@@ -3668,6 +3736,9 @@ pure nothrow @nogc @safe:
         r.basis *= fact;
         return r;
     }
+
+
+    //_FORCE_INLINE_ AABB xform(const AABB &p_aabb) const;z
 
     
 }

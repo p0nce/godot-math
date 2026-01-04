@@ -253,6 +253,11 @@ unittest
     assert(Vector4.sizeof == 16);
     assert(Vector4i.sizeof == 16);
     assert(Vector4d.sizeof == 32);
+    assert(Rect2.sizeof == 16);
+    assert(Rect2i.sizeof == 16);
+    assert(Rect2d.sizeof == 32);
+    assert(AABB.sizeof == 24);
+    assert(AABBd.sizeof == 48);
     assert(Quaternion.sizeof == 16);
     assert(Quaterniond.sizeof == 32);
     assert(Transform2D.sizeof == 24);
