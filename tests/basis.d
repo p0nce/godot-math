@@ -133,8 +133,6 @@ unittest
                     Vector3(-0.6,  -0.5,  0.1),
                     Vector3( 0.1, -0.25,  0.15));
     B = B.orthonormalized();
-    import std.stdio;
-    debug writeln(B);
     assert(B.is_conformal);
     assert(B.is_rotation);
 }

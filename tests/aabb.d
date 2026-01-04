@@ -37,3 +37,40 @@ unittest
     assert(box.position == Vector3(-5.0, 0.0, 0.0));
     assert(box.size  == Vector3(15.0, 2.0, 5.0));
 }
+
+@("AABB get_longest_axis")
+unittest
+{
+    AABB box = AABB(Vector3(0, 0, 0), Vector3(2, 4, 8));
+    assert(box.get_longest_axis() == Vector3(0, 0, 1));
+    assert(box.get_longest_axis_index() == 2);
+    assert(box.get_longest_axis_size() == 8.0);
+}
+
+@("AABB get_shortest_axis")
+unittest
+{
+    AABB box = AABB(Vector3(0, 0, 0), Vector3(2, 4, 8));
+    assert(box.get_shortest_axis() == Vector3(1.0, 0.0, 0.0));
+    assert(box.get_shortest_axis_index() == 0);
+    assert(box.get_shortest_axis_size() == 2.0);
+}
+
+@("AABB grow")
+unittest
+{
+    AABB box = AABB(Vector3(4, 4, 4), Vector3(8, 8, 8));
+    AABB grown = box.grow(4);
+    assert(grown.position == Vector3(0.0, 0.0, 0.0));
+    assert(grown.size == Vector3(16.0, 16.0, 16.0));
+}
+
+@("AABB intersection")
+unittest
+{
+    AABB box1 = AABB(Vector3(0, 0, 0), Vector3(5, 2, 8));
+    AABB box2 = AABB(Vector3(2, 0, 2), Vector3(8, 4, 4));
+    AABB intersection = box1.intersection(box2);
+    assert(intersection.position == Vector3(2.0, 0.0, 2.0));
+    assert(intersection.size == Vector3(3.0, 2.0, 4.0));
+}

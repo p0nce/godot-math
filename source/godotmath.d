@@ -1797,6 +1797,184 @@ pure nothrow @nogc @safe:
             default: assert(0);
         }
     }
+
+    V3 get_longest_axis() const 
+    {    
+        V3 axis = V3(1, 0, 0);
+        T max_size = size.x;
+        if (size.y > max_size) 
+        {
+            axis = V3(0, 1, 0);
+            max_size = size.y;
+        }
+        if (size.z > max_size) 
+        {
+            axis = V3(0, 0, 1);
+        }
+        return axis;
+    }
+
+    int get_longest_axis_index() const 
+    {
+        int axis = 0;
+        T max_size = size.x;
+        if (size.y > max_size) 
+        {
+            axis = 1;
+            max_size = size.y;
+        }
+        if (size.z > max_size) 
+        {
+            axis = 2;
+        }
+	    return axis;
+    }
+
+    T get_longest_axis_size() const 
+    {
+        T max_size = size.x;
+        if (size.y > max_size) max_size = size.y;
+        if (size.z > max_size) max_size = size.z;
+        return max_size;
+    }
+
+    V3 get_shortest_axis() const 
+    {
+        V3 axis = V3(1, 0, 0);
+        T min_size = size.x;
+        if (size.y < min_size) 
+        {
+            axis = V3(0, 1, 0);
+            min_size = size.y;
+        }
+        if (size.z < min_size) 
+        {
+            axis = V3(0, 0, 1);
+        }
+        return axis;
+    }
+    
+    int get_shortest_axis_index() const 
+    {
+        int axis = 0;
+        T min_size = size.x;
+        if (size.y < min_size) 
+        {
+            axis = 1;
+            min_size = size.y;
+        }
+        if (size.z < min_size) 
+        {
+            axis = 2;
+        }
+        return axis;
+    }
+
+    T get_shortest_axis_size() const 
+    {
+        T min_size = size.x;
+        if (size.y < min_size) min_size = size.y;
+        if (size.z < min_size) min_size = size.z;
+        return min_size;
+    }
+
+    T get_volume() const => size.x * size.y * size.z;
+
+    A grow(T by) const
+    {
+        A r = this;
+        r.grow_by(by);
+        return r;
+    }
+    
+    private void grow_by(T by)
+    {
+        position.x -= by;
+        position.y -= by;
+        position.z -= by;
+        size.x += 2 * by;
+        size.y += 2 * by;
+        size.z += 2 * by;
+    }
+
+    bool has_point(const V3 point) const
+    {
+        if (point.x < position.x) return false;
+        if (point.y < position.y) return false;
+        if (point.z < position.z) return false;
+        // Godot's AABB include the borders, must be ok in floating-point
+        if (point.x > (position.x + size.x)) return false;
+        if (point.y > (position.y + size.y)) return false;
+        if (point.z > (position.z + size.z)) return false;
+        return true;
+    }
+
+    bool has_surface() const
+    {
+        return size.x > 0 || size.y > 0 || size.z > 0;
+    }
+
+    bool has_volume() const
+    {
+        return size.x > 0 && size.y > 0 && size.z > 0;
+    }
+
+    A intersection(const A aabb) const 
+    {
+        check_size_is_positive(this);
+        check_size_is_positive(aabb);
+                
+        V3 src_min = position;
+        V3 src_max = position + size;
+        V3 dst_min = aabb.position;
+        V3 dst_max = aabb.position + aabb.size;
+
+        V3 min, max;
+
+        if (src_min.x > dst_max.x || src_max.x < dst_min.x)
+            return A.init;
+        else 
+        {
+            min.x = (src_min.x > dst_min.x) ? src_min.x : dst_min.x;
+            max.x = (src_max.x < dst_max.x) ? src_max.x : dst_max.x;
+        }
+
+        if (src_min.y > dst_max.y || src_max.y < dst_min.y)
+            return A.init;
+        else 
+        {
+            min.y = (src_min.y > dst_min.y) ? src_min.y : dst_min.y;
+            max.y = (src_max.y < dst_max.y) ? src_max.y : dst_max.y;
+        }
+
+        if (src_min.z > dst_max.z || src_max.z < dst_min.z) 
+            return A.init;
+        else 
+        {
+            min.z = (src_min.z > dst_min.z) ? src_min.z : dst_min.z;
+            max.z = (src_max.z < dst_max.z) ? src_max.z : dst_max.z;
+        }
+
+        return A(min, max - min);
+    }
+
+    bool intersects(const A aabb) const 
+    {
+        check_size_is_positive(this);
+        check_size_is_positive(aabb);
+        if (p.x >= (aabb.p.x + aabb.size.x)) return false;
+        if ((p.x + size.x) <= aabb.p.x) return false;
+        if (p.y >= (aabb.p.y + aabb.size.y)) return false;
+        if ((p.y + size.y) <= aabb.p.y) return false;
+        if (p.z >= (aabb.p.z + aabb.size.z)) return false;
+        if ((p.z + size.z) <= aabb.p.z) return false;
+        return true;
+    }
+
+    private static void check_size_is_positive(const A aabb)
+    {
+        assert(gm_likely(aabb.size.x >= 0 && aabb.size.y >= 0 && aabb.size.z >= 0), "negative size AABB");
+    }
 }
 
 
