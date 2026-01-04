@@ -1855,6 +1855,7 @@ pure nothrow @nogc @safe:
 
     bool is_equal_approx(const Q to) const => gm_is_equal_approx(x, to.x) && gm_is_equal_approx(y, to.y) && gm_is_equal_approx(z, to.z) && gm_is_equal_approx(w, to.w);
     bool is_finite() const => gm_is_finite(x) && gm_is_finite(y) && gm_is_finite(z) && gm_is_finite(w);
+    bool is_identity_approx() const => is_equal_approx(IDENTITY); // #BONUS
     bool is_normalized() const => gm_is_equal_approx(length_squared(), cast(T)1, cast(T)GM_UNIT_EPSILON);
 
     T length() const => gm_sqrt(length_squared());
@@ -2057,6 +2058,16 @@ pure nothrow @nogc @safe:
 
     // operators
 
+    U opCast(U)() const if (isQuaternionImpl!U)
+    {
+        static if (is(U.Elem == float))
+            return U(cast(float)x, cast(float)y, cast(float)z, cast(float)w);
+        else static if (is(U.Elem == double))
+            return U(cast(double)x, cast(double)y, cast(double)z, cast(double)w);
+        else
+            static assert(0);
+    }
+
     Q opBinary(string op)(const Q v) const if (op == "*")
     {
         Q r = this;
@@ -2241,6 +2252,8 @@ pure nothrow @nogc @safe:
     bool is_finite() const
         => x.is_finite() && y.is_finite() && origin.is_finite();
 
+    bool is_identity_approx() const => is_equal_approx(IDENTITY); // #BONUS
+
     T2D looking_at(V2 target) const
     {
         T2D r = T2D(get_rotation(), get_origin());
@@ -2323,6 +2336,23 @@ pure nothrow @nogc @safe:
     }
 
     // operators
+
+    U opCast(U)() const if (isTransform2DImpl!U)
+    {
+        static if (is(U.Elem == float))
+        {
+            alias VD = Vector2Impl!float;
+            return U(cast(VD)x, cast(VD)y, cast(VD)origin);
+        }
+        else static if (is(U.Elem == double))
+        {
+            alias VD = Vector2Impl!double;
+            return U(cast(VD)x, cast(VD)y, cast(VD)origin);
+        }
+        else
+            static assert(0);
+    }
+
     ref inout(V2) opIndex(size_t n) inout return => columns[n];
     
     V2 opBinary(string op)(const V2 v) const if (op == "*") => xform(v);
@@ -2828,6 +2858,7 @@ pure nothrow @nogc @safe:
     bool is_rotation() const => is_conformal() && gm_is_equal_approx(determinant(), cast(T)1, cast(T)GM_UNIT_EPSILON);
     bool is_equal_approx(const B b) const => rows[0].is_equal_approx(b.rows[0]) && rows[1].is_equal_approx(b.rows[1]) && rows[2].is_equal_approx(b.rows[2]);
     bool is_finite() const => rows[0].is_finite() && rows[1].is_finite() && rows[2].is_finite();
+    bool is_identity_approx() const => is_equal_approx(IDENTITY); // #BONUS
 
     static B looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front = false)
     {
@@ -3218,6 +3249,7 @@ pure nothrow @nogc @safe:
     }
     bool is_equal_approx(T3D xform) const => basis.is_equal_approx(xform.basis) && origin.is_equal_approx(xform.origin);
     bool is_finite() const => basis.is_finite() && origin.is_finite();
+    bool is_identity_approx() const => is_equal_approx(IDENTITY); // #BONUS
     
     T3D looking_at(V3 target, V3 up = V3(0, 1, 0), bool use_model_front) const
     {
@@ -3282,6 +3314,25 @@ pure nothrow @nogc @safe:
                                      basis[2].dot(v) + origin.z);
 
     // operators
+
+    U opCast(U)() const if (isTransform3DImpl!U)
+    {
+        static if (is(U.Elem == float))
+        {
+            alias BD = BasisImpl!float;
+            alias VD = Vector3Impl!float;
+            return U(cast(BD)basis, cast(VD)origin);
+        }
+        else static if (is(U.Elem == double))
+        {
+            alias BD = BasisImpl!double;
+            alias VD = Vector3Impl!double;
+            return U(cast(BD)basis, cast(VD)origin);
+        }
+        else
+            static assert(false);
+    }
+
     T3D opBinary(string op)(const T3D transform) const if (op == "*")
     {
         T3D r = this;
@@ -3333,6 +3384,7 @@ pure nothrow @nogc @safe:
         alias V3   = Vector3Impl!T;
         alias V4   = Vector4Impl!T;
         alias P    = ProjectionImpl!T;
+        alias R    = Rect2Impl!T;
         alias T3D  = Transform3DImpl!T;
         alias Elem = T;
         alias C = columns;
@@ -3429,7 +3481,12 @@ pure nothrow @nogc @safe:
         return proj;
     }
 
-    //TODO static P create_light_atlas_rect(Rect2 rect)
+    static P create_light_atlas_rect(R rect)
+    {
+        P proj;
+        proj.set_light_atlas_rect(rect);
+        return proj;
+    }
 
     static P create_orthogonal(T left, T right, T bottom, T top, T z_near, T z_far)
     {
@@ -3858,6 +3915,8 @@ pure nothrow @nogc @safe:
     bool is_equal_approx(const P other) const
         => x.is_equal_approx(other.x) && y.is_equal_approx(other.y) && z.is_equal_approx(other.z) && w.is_equal_approx(other.w);
 
+    bool is_identity_approx() const => is_equal_approx(IDENTITY); // #BONUS
+
     bool is_orthogonal() const 
     {
         // NOTE: This assumes that the matrix is a projection across z-axis
@@ -3898,6 +3957,26 @@ pure nothrow @nogc @safe:
         m[12] = 0.0;
         m[13] = 0.0;
         m[14] = remap_z ? 0.5 : 0.0;
+        m[15] = 1.0;
+    }
+
+    private void set_light_atlas_rect(const R rect)
+    {
+        m[0] = rect.size.width;
+        m[1] = 0.0;
+        m[2] = 0.0;
+        m[3] = 0.0;
+        m[4] = 0.0;
+        m[5] = rect.size.height;
+        m[6] = 0.0;
+        m[7] = 0.0;
+        m[8] = 0.0;
+        m[9] = 0.0;
+        m[10] = 1.0;
+        m[11] = 0.0;
+        m[12] = rect.p.x;
+        m[13] = rect.p.y;
+        m[14] = 0.0;
         m[15] = 1.0;
     }
 
@@ -4085,6 +4164,23 @@ pure nothrow @nogc @safe:
     }
 
     // operators
+
+    U opCast(U)() const if (isProjectionImpl!U)
+    {
+        static if (is(U.Elem == float))
+        {
+            alias VD = Vector4Impl!float;
+            return U(cast(VD)columns[0], cast(VD)columns[1], cast(VD)columns[2], cast(VD)columns[3]);
+        }
+        else static if (is(U.Elem == double))
+        {
+            alias VD = Vector4Impl!double;
+            return U(cast(VD)columns[0], cast(VD)columns[1], cast(VD)columns[2], cast(VD)columns[3]);
+        }
+        else
+            static assert(false);
+    }
+
     ref inout(V4) opIndex(size_t n) inout return => columns[n];
 
     T3D opCast(U : T3D)() const => T3D(this);
