@@ -58,8 +58,9 @@ A `Basis` is a 3x3 matrix that only deals with base change / rotation.
 ## Features
 
 - one .d file
-- Everything is fully `pure nothrow @nogc @safe`.
-- LDC, GDC, DMD
+- Everything is `pure nothrow @nogc @safe`
+- LDC, GDC (untested), DMD
+- Uses `numem` and the C runtime only
 
 | Type  | Status | Description | Documentation                  |
 |-------|--------|-------------|--------------------------------|
