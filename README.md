@@ -1,5 +1,7 @@
 # godot-math
 
+![CI](https://github.com/p0nce/godot-math/actions/workflows/x86_64.yml/badge.svg)
+
 [`godot-math`]() is a D port of Godot's linear algebra with unchanged semantics. 
 
  ➡️ [See Godot Math documentation](https://docs.godotengine.org/en/stable/tutorials/math/index.html)
