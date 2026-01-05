@@ -200,7 +200,7 @@ double gm_asin(double x)  => x < -1 ? (-GM_PI / 2) : (x > 1 ? (GM_PI / 2) : assu
 float  gm_asinh(float x)  => assumePureNothrowNogc(&libc.asinhf, x); ///
 double gm_asinh(double x) => assumePureNothrowNogc(&libc.asinh, x); ///
 float  gm_atan(float x)   => libc.atanf(x); //assumePureNothrowNogc(&libc.atanf, x); ///
-double  gm_atan(double x)   => libc.atan(x); //assumePureNothrowNogc(&libc.atan, x); ///
+double gm_atan(double x)  => libc.atan(x); //assumePureNothrowNogc(&libc.atan, x); ///
 float  gm_atan2(float y, float x)   => assumePureNothrowNogc(&libc.atan2f, y, x); ///
 double gm_atan2(double y, double x) => assumePureNothrowNogc(&libc.atan2, y, x); ///
 
@@ -4797,9 +4797,10 @@ enum bool isTransform3DImpl(T) = is(T : Transform3DImpl!U, U...);
 enum bool isBasisImpl(T)       = is(T : BasisImpl!U, U...);
 enum bool isProjectionImpl(T)  = is(T : ProjectionImpl!U, U...);
 
+// Note: DMD needs the extern(C) here else ABI problem.
 auto assumePureNothrowNogc(T, Args...)(T expr, auto ref Args args) pure nothrow @nogc @trusted if (isSomeFunction!T) {
     static if (is(T Fptr : Fptr*) && is(Fptr == function))
-        alias ft = pure nothrow @nogc ReturnType!T function(Parameters!T);
+        alias ft = extern(C) pure nothrow @nogc ReturnType!T function(Parameters!T);
     else static if (is(T Fdlg == delegate))
         alias ft = pure nothrow @nogc ReturnType!T delegate(Parameters!T);
     else
