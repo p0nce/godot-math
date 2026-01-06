@@ -25,7 +25,7 @@ configuration "unittest-preview" {
     dependency "silly" version="~>1.1"
     sourcePaths "source/" "tests/"
     importPaths "source/" "tests/"
-    dflags "-preview=all"
+    dflags "-preview=dip1000" "-preview=dip1021"
 }
 
 configuration "unittest-cov" {

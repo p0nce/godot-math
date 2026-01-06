@@ -2687,7 +2687,10 @@ pure nothrow @nogc @safe:
         assert(det != 0);
         T idet = 1.0f / det;
 
-        gm_swap(columns[0][0], columns[1][1]);
+        T c00 = columns[0][0];
+        columns[0][0] = columns[1][1];
+        columns[1][1] = c00;
+        
         columns[0] *= V2(idet, -idet);
         columns[1] *= V2(-idet, idet);
         columns[2] = basis_xform(-columns[2]);
@@ -2727,7 +2730,9 @@ pure nothrow @nogc @safe:
     {
         // FIXME: this function assumes the basis is a rotation matrix, with no scaling.
         // Transform2D::affine_inverse can handle matrices with scaling, so GDScript should eventually use that.
-        gm_swap(x.y, y.x);
+        T tmp = x.y;
+        x.y = y.x;
+        y.x = tmp;
         origin = basis_xform(-origin);
     }
 
@@ -3598,9 +3603,17 @@ pure nothrow @nogc @safe:
 
     private void transpose() 
     {
-        gm_swap!T(rows[0][1], rows[1][0]);
-        gm_swap!T(rows[0][2], rows[2][0]);
-        gm_swap!T(rows[1][2], rows[2][1]);
+        T tmp = rows[0][1];
+        rows[0][1] = rows[1][0];
+        rows[1][0] = tmp;
+
+        tmp = rows[0][2];
+        rows[0][2] = rows[2][0];
+        rows[2][0] = tmp;
+        
+        tmp = rows[1][2];
+        rows[1][2] = rows[2][1];
+        rows[2][1] = tmp;
     }
 
     B transposed() const 
