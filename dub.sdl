@@ -10,7 +10,7 @@ dependency "numem" version="~>1.4"
 toolchainRequirements ldc=">=1.40.0" frontend=">=2.106"
 
 configuration "library" {
-    targetType "staticLibrary"
+    targetType "library"
 }
 
 configuration "unittest" {
